@@ -43,10 +43,12 @@ class NPYDataset(Dataset):
                 if torch.cuda.is_available():
                     X=X.cuda()
                 z=model(X).detach().cpu().numpy()
-                Z.append(Z)
+                Z.append(z)
                 print(f"Processed batch {i}/{n_batches}")
         Z=np.vstack(Z)
         torch.save(dict(embeddings=Z,patch_info=self.patch_info),os.path.join(out_dir,f"{self.ID}.pkl"))
+        print("Embeddings saved")
+        quit()
 
 
 
