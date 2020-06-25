@@ -46,7 +46,7 @@ class NPYDataset(Dataset):
                 Z.append(Z)
                 print(f"Processed batch {i}/{n_batches}")
         Z=np.vstack(Z)
-        pickle.dump(dict(embeddings=Z,patch_info=self.patch_info),os.path.join(out_dir,f"{self.ID}.pkl"))
+        torch.save(dict(embeddings=Z,patch_info=self.patch_info),os.path.join(out_dir,f"{self.ID}.pkl"))
 
 
 
