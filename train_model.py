@@ -31,6 +31,9 @@ class NPYDataset(Dataset):
         x,y,patch_size=self.patch_info.loc[i,["x","y","patch_size"]]
         return self.transform(self.to_pil(self.X[x:x+patch_size,y:y+patch_size]))
 
+    def __len__(self):
+        return self.patch_info.shape[0]
+
     def embed(self,model,batch_size,out_dir):
         Z=[]
         dataloader=DataLoader(self,batch_size=batch_size,shuffle=False)
