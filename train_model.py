@@ -37,12 +37,14 @@ class NPYDataset(Dataset):
     def embed(self,model,batch_size,out_dir):
         Z=[]
         dataloader=DataLoader(self,batch_size=batch_size,shuffle=False)
+        n_batches=len(self)//batch_size
         with torch.no_grad():
             for i,X in enumerate(dataloader):
                 if torch.cuda.is_available():
                     X=X.cuda()
                 z=model(X).detach().cpu().numpy()
                 Z.append(Z)
+                print(f"Processed batch {i}/{n_batches}")
         Z=np.vstack(Z)
         pickle.dump(dict(embeddings=Z,patch_info=self.patch_info),os.path.join(out_dir,f"{self.ID}.pkl"))
 
