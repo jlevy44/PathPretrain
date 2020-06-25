@@ -5,8 +5,44 @@ from torchvision import transforms, datasets as Datasets
 import sys
 import os
 import numpy as np
+import torch
+import torch.nn as nn
 import pandas as pd
 from models import generate_model, ModelTrainer
+from PIL import Image
+from pathflowai.utils import load_sql_df
+
+class Reshape(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self,x):
+        return x.view(x.shape[0],-1)
+
+class NPYDataset(Dataset):
+    def __init__(self, patch_info, npy_file, transform):
+        self.ID=os.path.basename(npy_file).split('.')[0]
+        self.patch_info=patch_info.loc[patch_info["ID"]==self.ID].reset_index()
+        self.X=np.load(npy_file)
+        self.to_pil=lambda x: Image.fromarray(x)
+        self.transform=transform
+
+    def __getitem__(self,i):
+        x,y,patch_size=self.patch_info.loc[i,["x","y","patch_size"]]
+        return self.transform(self.to_pil(self.X[x:x+patch_size,y:y+patch_size]))
+
+    def embed(self,model,batch_size,out_dir):
+        Z=[]
+        dataloader=DataLoader(self,batch_size=batch_size,shuffle=False)
+        with torch.no_grad():
+            for i,X in enumerate(dataloader):
+                if torch.cuda.is_available():
+                    X=X.cuda()
+                z=model(X).detach().cpu().numpy()
+                Z.append(Z)
+        Z=np.vstack(Z)
+        pickle.dump(dict(embeddings=Z,patch_info=self.patch_info),os.path.join(out_dir,f"{self.ID}.pkl"))
+
 
 
 def generate_transformers(image_size=224, resize=256, mean=[], std=[], include_jitter=False):
@@ -52,7 +88,10 @@ def train_model(inputs_dir='inputs_training',
                 predictions_save_path='predictions.pkl',
                 predict_set='test',
                 verbose=False,
-                class_balance=True
+                class_balance=True,
+                extract_embeddings="",
+                extract_embeddings_df="",
+                embedding_out_dir="./"
                 ):
     transformers = generate_transformers(
         image_size=crop_size, resize=resize, mean=mean, std=std)
@@ -97,6 +136,13 @@ def train_model(inputs_dir='inputs_training',
     else:
 
         trainer.model.load_state_dict(torch.load(model_save_loc))
+
+        if extract_embeddings and extract_embeddings_df:
+            trainer.model=nn.Sequential(trainer.model.features,Reshape())
+            patch_info=load_sql_df(extract_embeddings_df,resize)
+            dataset=NPYDataset(patch_info,extract_embeddings,transformers["test"])
+            dataset.embed(trainer.model,batch_size,embedding_out_dir)
+            exit()
 
         Y = dict()
 
