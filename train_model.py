@@ -98,8 +98,10 @@ def train_model(inputs_dir='inputs_training',
                 class_balance=True,
                 extract_embeddings="",
                 extract_embeddings_df="",
-                embedding_out_dir="./"
+                embedding_out_dir="./",
+                gpu_id=0
                 ):
+    torch.cuda.set_device(gpu_id)
     transformers = generate_transformers(
         image_size=crop_size, resize=resize, mean=mean, std=std)
     datasets = {x: Datasets.ImageFolder(os.path.join(
