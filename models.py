@@ -211,7 +211,7 @@ class ModelTrainer:
         self.verbosity=0
         self.checkpoints_dir=checkpoints_dir
 
-    def save_checkpoint(model,epoch):
+    def save_checkpoint(self,model,epoch):
         os.makedirs(self.checkpoints_dir,exist_ok=True)
         torch.save(model,os.path.join(self.checkpoints_dir,f"{epoch}.checkpoint.pth"))
 
