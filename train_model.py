@@ -99,7 +99,8 @@ def train_model(inputs_dir='inputs_training',
                 extract_embeddings="",
                 extract_embeddings_df="",
                 embedding_out_dir="./",
-                gpu_id=0
+                gpu_id=0,
+                checkpoints_dir="checkpoints"
                 ):
     torch.cuda.set_device(gpu_id)
     transformers = generate_transformers(
@@ -131,7 +132,8 @@ def train_model(inputs_dir='inputs_training',
                            dataloaders['val'],
                            optimizer_opts,
                            scheduler_opts,
-                           loss_fn='ce')
+                           loss_fn='ce',
+                           checkpoints_dir=checkpoints_dir)
 
     if class_balance:
         trainer.add_class_balance_loss(datasets['train'].targets)
