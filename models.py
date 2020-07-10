@@ -180,7 +180,7 @@ class ModelTrainer:
             Number of training batches for epoch.
     """
 
-    def __init__(self, model, n_epoch=300, validation_dataloader=None, optimizer_opts=dict(name='adam', lr=1e-3, weight_decay=1e-4), scheduler_opts=dict(scheduler='warm_restarts', lr_scheduler_decay=0.5, T_max=10, eta_min=5e-8, T_mult=2), loss_fn='ce', reduction='mean', num_train_batches=None, opt_level='O1'):
+    def __init__(self, model, n_epoch=300, validation_dataloader=None, optimizer_opts=dict(name='adam', lr=1e-3, weight_decay=1e-4), scheduler_opts=dict(scheduler='warm_restarts', lr_scheduler_decay=0.5, T_max=10, eta_min=5e-8, T_mult=2), loss_fn='ce', reduction='mean', num_train_batches=None, opt_level='O1', checkpoints_dir='checkpoints'):
 
         self.model = model
         # self.amp_handle = amp.init(enabled=True)
@@ -209,6 +209,11 @@ class ModelTrainer:
         self.num_train_batches = num_train_batches
         self.val_loss_fn = copy.deepcopy(loss_functions[loss_fn])
         self.verbosity=0
+        self.checkpoints_dir=checkpoints_dir
+
+    def save_checkpoint(model,epoch):
+        os.makedirs(self.checkpoints_dir,exist_ok=True)
+        torch.save(model,os.path.join(self.checkpoints_dir,f"{epoch}.checkpoint.pth"))
 
     def calc_loss(self, y_pred, y_true):
         """Calculates loss supplied in init statement and modified by reweighting.
@@ -511,6 +516,7 @@ class ModelTrainer:
                 min_val_loss = val_loss
                 best_epoch = epoch
                 best_model_state_dict = copy.deepcopy(self.model.state_dict())
+                self.save_checkpoint(best_model_state_dict,epoch)
         if save_model:
             print("Saving best model at epoch {}".format(best_epoch))
             self.model.load_state_dict(best_model_state_dict)
