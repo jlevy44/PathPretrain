@@ -11,6 +11,8 @@ import pandas as pd
 from models import generate_model, ModelTrainer
 from PIL import Image
 from pathflowai.utils import load_sql_df
+import torch.nn as nn
+import kornia.augmentation as K, kornia.geometry.transform as G
 
 class Reshape(nn.Module):
     def __init__(self):
@@ -79,6 +81,31 @@ def generate_transformers(image_size=224, resize=256, mean=[], std=[], include_j
                                                   transforms.ToTensor()])
     return {'train': train_transform, 'val': val_transform, 'test': val_transform, 'norm': normalization_transform}
 
+def generate_kornia_transforms(image_size=224, resize=256, mean=[], std=[], include_jitter=False):
+    mean=torch.tensor(mean) if mean else torch.tensor([0.5, 0.5, 0.5])
+    std=torch.tensor(std) if std else torch.tensor([0.1, 0.1, 0.1])
+    if torch.cuda.is_available():
+        mean=mean.cuda()
+        std=std.cuda()
+    train_transforms=[G.Resize(resize)]
+        + ([K.ColorJitter(brightness=0.4, contrast=0.4,
+                                   saturation=0.4, hue=0.1)] if include_jitter else [])
+        + [K.RandomHorizontalFlip(p=0.5),
+           K.RandomVerticalFlip(p=0.5),
+           K.RandomRotation(90),
+           K.RandomResizedCrop(image_size),
+           K.Normalize(mean,std)
+           ]
+    val_transforms=[G.Resize(resize),
+           K.CenterCrop(image_size),
+           K.Normalize(mean,std)
+           ]
+    transforms=dict(train=nn.Sequential(*train_transforms),
+                val=nn.Sequential(*val_transforms))
+    if torch.cuda.is_available():
+        for k in transforms:
+            transforms[k]=transforms[k].cuda()
+    return transforms
 
 def train_model(inputs_dir='inputs_training',
                 learning_rate=1e-4,
@@ -87,7 +114,7 @@ def train_model(inputs_dir='inputs_training',
                 resize=256,
                 mean=[0.5, 0.5, 0.5],
                 std=[0.1, 0.1, 0.1],
-                num_classes=3,
+                num_classes=2,
                 architecture='resnet50',
                 batch_size=32,
                 predict=False,
@@ -100,13 +127,19 @@ def train_model(inputs_dir='inputs_training',
                 extract_embeddings_df="",
                 embedding_out_dir="./",
                 gpu_id=0,
-                checkpoints_dir="checkpoints"
+                checkpoints_dir="checkpoints",
+                tensor_dataset=False
                 ):
     torch.cuda.set_device(gpu_id)
-    transformers = generate_transformers(
+    transformers=generate_transformers if not tensor_dataset else generate_kornia_transforms
+    transformers = transformers(
         image_size=crop_size, resize=resize, mean=mean, std=std)
-    datasets = {x: Datasets.ImageFolder(os.path.join(
-        inputs_dir, x), transformers[x]) for x in ['train', 'val', 'test']}
+    if tensor_dataset:
+        datasets = {x: torch.load(os.path.join(inputs_dir,f"{x}_data.pth")) for x in ['train','val']}
+    else:
+
+        datasets = {x: Datasets.ImageFolder(os.path.join(
+            inputs_dir, x), transformers[x]) for x in ['train', 'val', 'test']}
 
     dataloaders = {x: DataLoader(
         datasets[x], batch_size=batch_size, shuffle=(x == 'train')) for x in datasets}
@@ -133,7 +166,9 @@ def train_model(inputs_dir='inputs_training',
                            optimizer_opts,
                            scheduler_opts,
                            loss_fn='ce',
-                           checkpoints_dir=checkpoints_dir)
+                           checkpoints_dir=checkpoints_dir,
+                           tensor_dataset=tensor_dataset,
+                           transforms=transformers)
 
     if class_balance:
         trainer.add_class_balance_loss(datasets['train'].targets)
@@ -145,6 +180,7 @@ def train_model(inputs_dir='inputs_training',
         torch.save(trainer.model.state_dict(), model_save_loc)
 
     else:
+        assert not tensor_dataset, "Only ImageFolder and NPYDatasets allowed"
 
         trainer.model.load_state_dict(torch.load(model_save_loc))
 
