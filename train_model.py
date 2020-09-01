@@ -172,7 +172,7 @@ def train_model(inputs_dir='inputs_training',
                            transforms=transformers)
 
     if class_balance:
-        trainer.add_class_balance_loss(datasets['train'].targets)
+        trainer.add_class_balance_loss(datasets['train'].targets if not tensor_dataset else datasets['train'].tensors[1].numpy())
 
     if not predict:
 
