@@ -143,8 +143,8 @@ def train_model(inputs_dir='inputs_training',
             datasets = {x: Datasets.ImageFolder(os.path.join(
                 inputs_dir, x), transformers[x]) for x in ['train', 'val', 'test']}
 
-    dataloaders = {x: DataLoader(
-        datasets[x], batch_size=batch_size, shuffle=(x == 'train')) for x in datasets}
+        dataloaders = {x: DataLoader(
+            datasets[x], batch_size=batch_size, shuffle=(x == 'train')) for x in datasets}
 
     model = generate_model(architecture,
                            num_classes)
