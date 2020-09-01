@@ -131,7 +131,7 @@ def train_model(inputs_dir='inputs_training',
                 checkpoints_dir="checkpoints",
                 tensor_dataset=False
                 ):
-    if extract_embeddings: assert extract_embeddings==predict, "Must be in prediction mode to extract embeddings"
+    if extract_embeddings: assert predict, "Must be in prediction mode to extract embeddings"
     torch.cuda.set_device(gpu_id)
     transformers=generate_transformers if not tensor_dataset else generate_kornia_transforms
     transformers = transformers(
