@@ -87,18 +87,18 @@ def generate_kornia_transforms(image_size=224, resize=256, mean=[], std=[], incl
     if torch.cuda.is_available():
         mean=mean.cuda()
         std=std.cuda()
-    train_transforms=[G.Resize(resize)]
+    train_transforms=[G.Resize((resize,resize))]
     if include_jitter:
         train_transforms.append(K.ColorJitter(brightness=0.4, contrast=0.4,
                                    saturation=0.4, hue=0.1))
     train_transforms.extend([K.RandomHorizontalFlip(p=0.5),
            K.RandomVerticalFlip(p=0.5),
            K.RandomRotation(90),
-           K.RandomResizedCrop(image_size),
+           K.RandomResizedCrop((image_size,image_size)),
            K.Normalize(mean,std)
            ])
-    val_transforms=[G.Resize(resize),
-           K.CenterCrop(image_size),
+    val_transforms=[G.Resize((resize,resize)),
+           K.CenterCrop((image_size,image_size)),
            K.Normalize(mean,std)
            ]
     transforms=dict(train=nn.Sequential(*train_transforms),
