@@ -131,16 +131,17 @@ def train_model(inputs_dir='inputs_training',
                 checkpoints_dir="checkpoints",
                 tensor_dataset=False
                 ):
+    if extract_embeddings: assert extract_embeddings==predict, "Must be in prediction mode to extract embeddings"
     torch.cuda.set_device(gpu_id)
     transformers=generate_transformers if not tensor_dataset else generate_kornia_transforms
     transformers = transformers(
         image_size=crop_size, resize=resize, mean=mean, std=std)
-    if tensor_dataset:
-        datasets = {x: torch.load(os.path.join(inputs_dir,f"{x}_data.pth")) for x in ['train','val']}
-    else:
-
-        datasets = {x: Datasets.ImageFolder(os.path.join(
-            inputs_dir, x), transformers[x]) for x in ['train', 'val', 'test']}
+    if not extract_embeddings:
+        if tensor_dataset:
+            datasets = {x: torch.load(os.path.join(inputs_dir,f"{x}_data.pth")) for x in ['train','val']}
+        else:
+            datasets = {x: Datasets.ImageFolder(os.path.join(
+                inputs_dir, x), transformers[x]) for x in ['train', 'val', 'test']}
 
     dataloaders = {x: DataLoader(
         datasets[x], batch_size=batch_size, shuffle=(x == 'train')) for x in datasets}
@@ -163,7 +164,7 @@ def train_model(inputs_dir='inputs_training',
 
     trainer = ModelTrainer(model,
                            n_epochs,
-                           dataloaders['val'],
+                           None if predict else dataloaders['val'],
                            optimizer_opts,
                            scheduler_opts,
                            loss_fn='ce',
@@ -171,10 +172,10 @@ def train_model(inputs_dir='inputs_training',
                            tensor_dataset=tensor_dataset,
                            transforms=transformers)
 
-    if class_balance:
-        trainer.add_class_balance_loss(datasets['train'].targets if not tensor_dataset else datasets['train'].tensors[1].numpy())
-
     if not predict:
+
+        if class_balance:
+            trainer.add_class_balance_loss(datasets['train'].targets if not tensor_dataset else datasets['train'].tensors[1].numpy())
 
         trainer, min_val_loss, best_epoch=trainer.fit(dataloaders['train'],verbose=verbose)
 
