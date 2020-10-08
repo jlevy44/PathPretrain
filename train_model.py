@@ -14,6 +14,7 @@ from PIL import Image
 from pathflowai.utils import load_sql_df
 import torch.nn as nn
 import kornia.augmentation as K, kornia.geometry.transform as G
+from datasets import NPYDataset, PickleDataset
 
 class Reshape(nn.Module):
     def __init__(self):
@@ -21,41 +22,6 @@ class Reshape(nn.Module):
 
     def forward(self,x):
         return x.view(x.shape[0],-1)
-
-class NPYDataset(Dataset):
-    def __init__(self, patch_info, npy_file, transform, tensor_dataset):
-        self.ID=os.path.basename(npy_file).split('.')[0]
-        self.patch_info=patch_info.loc[patch_info["ID"]==self.ID].reset_index()
-        self.X=np.load(npy_file)
-        self.to_pil=lambda x: Image.fromarray(x)
-        self.transform=transform
-        self.tensor_dataset=tensor_dataset
-
-    def __getitem__(self,i):
-        x,y,patch_size=self.patch_info.loc[i,["x","y","patch_size"]]
-        img=self.X[x:x+patch_size,y:y+patch_size]
-        return self.transform(self.to_pil(img)) if not self.tensor_dataset else torch.tensor(img)
-
-    def __len__(self):
-        return self.patch_info.shape[0]
-
-    def embed(self,model,batch_size,out_dir):
-        Z=[]
-        dataloader=DataLoader(self,batch_size=batch_size,shuffle=False)
-        n_batches=len(self)//batch_size
-        with torch.no_grad():
-            for i,X in enumerate(dataloader):
-                if torch.cuda.is_available(): X=X.cuda()
-                if torch.tensor_dataset: X = self.transform(X)
-                z=model(X).detach().cpu().numpy()
-                Z.append(z)
-                print(f"Processed batch {i}/{n_batches}")
-        Z=np.vstack(Z)
-        torch.save(dict(embeddings=Z,patch_info=self.patch_info),os.path.join(out_dir,f"{self.ID}.pkl"))
-        print("Embeddings saved")
-        quit()
-
-
 
 def generate_transformers(image_size=224, resize=256, mean=[], std=[], include_jitter=False):
 
@@ -132,9 +98,12 @@ def train_model(inputs_dir='inputs_training',
                 embedding_out_dir="./",
                 gpu_id=0,
                 checkpoints_dir="checkpoints",
-                tensor_dataset=False
+                tensor_dataset=False,
+                pickle_dataset=False,
+                label_map={}
                 ):
     if extract_embeddings: assert predict, "Must be in prediction mode to extract embeddings"
+    if tensor_dataset: assert not pickle_dataset and not class_balance, "Class balance not implemented, cannot have pickle and tensor classes activated"
     torch.cuda.set_device(gpu_id)
     transformers=generate_transformers if not tensor_dataset else generate_kornia_transforms
     transformers = transformers(
@@ -144,6 +113,8 @@ def train_model(inputs_dir='inputs_training',
             datasets = {x: torch.load(os.path.join(inputs_dir,f"{x}_data.pth")) for x in ['train','val']}
             for k in datasets:
                 if len(datasets[k].tensors[1].shape)>1: datasets[k]=TensorDataset(datasets[k].tensors[0],datasets[k].tensors[1].flatten())
+        elif pickle_dataset:
+            datasets = {x: PickleDataset(os.path.join(inputs_dir,f"{x}_data.pkl"),transformers[x],label_map) for x in ['train','val']}
         else:
             datasets = {x: Datasets.ImageFolder(os.path.join(
                 inputs_dir, x), transformers[x]) for x in ['train', 'val', 'test']}
@@ -180,7 +151,7 @@ def train_model(inputs_dir='inputs_training',
     if not predict:
 
         if class_balance:
-            trainer.add_class_balance_loss(datasets['train'].targets if not tensor_dataset else datasets['train'].tensors[1].numpy())
+            trainer.add_class_balance_loss(datasets['train'].targets if not tensor_dataset else datasets['train'].tensors[1].numpy().flatten())
 
         trainer, min_val_loss, best_epoch=trainer.fit(dataloaders['train'],verbose=verbose)
 
