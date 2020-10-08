@@ -6,6 +6,7 @@ import sys
 import os
 import numpy as np
 import torch
+from torch.utils.data import TensorDataset
 import torch.nn as nn
 import pandas as pd
 from models import generate_model, ModelTrainer
@@ -141,7 +142,8 @@ def train_model(inputs_dir='inputs_training',
     if not extract_embeddings:
         if tensor_dataset:
             datasets = {x: torch.load(os.path.join(inputs_dir,f"{x}_data.pth")) for x in ['train','val']}
-            for k in datasets: datasets[k].tensors[1]=datasets[k].tensors[1].flatten()
+            for k in datasets:
+                if len(datasets[k].tensors[1].shape)>1: datasets[k]=TensorDataset(datasets[k].tensors[0],datasets[k].tensors[1].flatten())
         else:
             datasets = {x: Datasets.ImageFolder(os.path.join(
                 inputs_dir, x), transformers[x]) for x in ['train', 'val', 'test']}
