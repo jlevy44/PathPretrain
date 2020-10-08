@@ -45,9 +45,15 @@ class PickleDataset(Dataset):
         self.X,self.targets=self.data['X'],self.data['y']
         self.transform=transform
         self.to_pil=lambda x: Image.fromarray(x)
-        self.length=len(self.X)
         self.label_map=label_map
-        if self.label_map: self.targets=pd.Series(self.targets).map(self.label_map).values
+        if self.label_map:
+            self.targets=pd.Series(self.targets).map(lambda x: self.label_map.get(x,-1)).values
+            if -1 in self.targets:
+                remove_bool=(self.targets!=-1)
+                self.targets=self.targets[remove_bool]
+                self.X=pd.Series(self.X).iloc[remove_bool].tolist()
+        self.length=len(self.X)
+
 
     def __getitem__(self,idx):
         return self.transform(self.to_pil(self.X[idx])), torch.tensor([self.y[idx]]).long()
