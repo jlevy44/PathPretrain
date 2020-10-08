@@ -100,7 +100,7 @@ def train_model(inputs_dir='inputs_training',
                 checkpoints_dir="checkpoints",
                 tensor_dataset=False,
                 pickle_dataset=False,
-                label_map={}
+                label_map=dict()
                 ):
     if extract_embeddings: assert predict, "Must be in prediction mode to extract embeddings"
     if tensor_dataset: assert not pickle_dataset and not class_balance, "Class balance not implemented, cannot have pickle and tensor classes activated"
