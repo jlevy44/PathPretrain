@@ -103,7 +103,6 @@ def train_model(inputs_dir='inputs_training',
                 pickle_dataset=False,
                 label_map=dict()
                 ):
-    print(label_map)
     if extract_embeddings: assert predict, "Must be in prediction mode to extract embeddings"
     if tensor_dataset: assert not pickle_dataset and not class_balance, "Class balance not implemented, cannot have pickle and tensor classes activated"
     torch.cuda.set_device(gpu_id)

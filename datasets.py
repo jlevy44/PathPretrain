@@ -58,5 +58,5 @@ class PickleDataset(Dataset):
     def __getitem__(self,idx):
         return self.transform(self.to_pil(self.X[idx])), torch.tensor([self.y[idx]]).long()
 
-    def __len_(self):
+    def __len__(self):
         return self.length
