@@ -27,9 +27,9 @@ def generate_transformers(image_size=224, resize=256, mean=[], std=[], include_j
 
     train_transform = transforms.Compose([
         transforms.Resize(resize)]
-        + ([transforms.ColorJitter(brightness=0.4, contrast=0.4,
-                                   saturation=0.4, hue=0.1)] if include_jitter else [])
-        + [transforms.RandomHorizontalFlip(p=0.5),
+    if include_jitter: train_transform.append(transforms.ColorJitter(brightness=0.4,
+                                            contrast=0.4, saturation=0.4, hue=0.1))
+    train_transform.extend([transforms.RandomHorizontalFlip(p=0.5),
            transforms.RandomVerticalFlip(p=0.5),
            transforms.RandomRotation(90),
            transforms.RandomResizedCrop(image_size),
