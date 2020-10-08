@@ -25,8 +25,7 @@ class Reshape(nn.Module):
 
 def generate_transformers(image_size=224, resize=256, mean=[], std=[], include_jitter=False):
 
-    train_transform = transforms.Compose([
-        transforms.Resize(resize)])
+    train_transform = [transforms.Resize(resize)]
     if include_jitter:
         train_transform.append(transforms.ColorJitter(brightness=0.4,
                                             contrast=0.4, saturation=0.4, hue=0.1))
@@ -38,6 +37,7 @@ def generate_transformers(image_size=224, resize=256, mean=[], std=[], include_j
            transforms.Normalize(mean if mean else [0.5, 0.5, 0.5],
                                 std if std else [0.1, 0.1, 0.1])
            ])
+    train_transform=transforms.Compose(train_transform)
     val_transform = transforms.Compose([
         transforms.Resize(resize),
         transforms.CenterCrop(image_size),
