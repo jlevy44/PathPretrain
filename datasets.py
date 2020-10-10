@@ -30,7 +30,7 @@ class NPYDataset(Dataset):
         with torch.no_grad():
             for i,X in enumerate(dataloader):
                 if torch.cuda.is_available(): X=X.cuda()
-                if torch.tensor_dataset: X = self.transform(X)
+                if self.tensor_dataset: X = self.transform(X)
                 z=model(X).detach().cpu().numpy()
                 Z.append(z)
                 print(f"Processed batch {i}/{n_batches}")
