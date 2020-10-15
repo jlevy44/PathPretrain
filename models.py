@@ -72,7 +72,7 @@ def prepare_model(model_name,
                   net_extra_kwargs=None,
                   load_ignore_extra=False,
                   num_classes=None,
-                  in_channels=None,
+                  in_channels=3,
                   remap_to_cpu=True,
                   remove_module=False,
                   semantic_segmentation=False):
