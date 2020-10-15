@@ -15,6 +15,8 @@ import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
 from sklearn.utils.class_weight import compute_class_weight
+from kornia.losses import DiceLoss
+
 matplotlib.use('Agg')
 sns.set()
 
@@ -72,8 +74,10 @@ def prepare_model(model_name,
                   num_classes=None,
                   in_channels=None,
                   remap_to_cpu=True,
-                  remove_module=False):
+                  remove_module=False,
+                  semantic_segmentation=False):
     from pytorchcv.model_provider import get_model
+    import segmentation_models_pytorch as smp
     """ https://raw.githubusercontent.com/osmr/imgclsmob/master/pytorch/utils.py
         Create and initialize model by name.
 
@@ -115,7 +119,10 @@ def prepare_model(model_name,
     if net_extra_kwargs is not None:
         kwargs.update(net_extra_kwargs)
 
-    net = get_model(model_name, **kwargs)
+    if not semantic_segmentation:
+        net = get_model(model_name, **kwargs)
+    else:
+        net = smp.Unet(model_name, classes=num_classes, in_channels=in_channels)
 
     if pretrained_model_file_path:
         assert (os.path.isfile(pretrained_model_file_path))
@@ -147,13 +154,14 @@ def prepare_model(model_name,
     return net
 
 
-def generate_model(architecture, num_classes):
+def generate_model(architecture, num_classes, semantic_segmentation):
     #    from pytorchcv.pytorch.utils import prepare_model
     model = prepare_model(architecture,
                           use_pretrained=False,
                           pretrained_model_file_path='',
                           use_cuda=False,
-                          num_classes=num_classes)
+                          num_classes=num_classes,
+                          semantic_segmentation=semantic_segmentation)
     return model
 
 
@@ -180,13 +188,13 @@ class ModelTrainer:
             Number of training batches for epoch.
     """
 
-    def __init__(self, model, n_epoch=300, validation_dataloader=None, optimizer_opts=dict(name='adam', lr=1e-3, weight_decay=1e-4), scheduler_opts=dict(scheduler='warm_restarts', lr_scheduler_decay=0.5, T_max=10, eta_min=5e-8, T_mult=2), loss_fn='ce', reduction='mean', num_train_batches=None, opt_level='O1', checkpoints_dir='checkpoints',tensor_dataset=False,transforms=None):
+    def __init__(self, model, n_epoch=300, validation_dataloader=None, optimizer_opts=dict(name='adam', lr=1e-3, weight_decay=1e-4), scheduler_opts=dict(scheduler='warm_restarts', lr_scheduler_decay=0.5, T_max=10, eta_min=5e-8, T_mult=2), loss_fn='ce', reduction='mean', num_train_batches=None, opt_level='O1', checkpoints_dir='checkpoints',tensor_dataset=False,transforms=None,semantic_segmentation=False):
 
         self.model = model
         # self.amp_handle = amp.init(enabled=True)
         optimizers = {'adam': torch.optim.Adam, 'sgd': torch.optim.SGD}
         loss_functions = {'bce': nn.BCEWithLogitsLoss(reduction=reduction), 'ce': nn.CrossEntropyLoss(
-            reduction=reduction), 'mse': nn.MSELoss(reduction=reduction), 'nll': nn.NLLLoss(reduction=reduction)}
+            reduction=reduction), 'mse': nn.MSELoss(reduction=reduction), 'nll': nn.NLLLoss(reduction=reduction),'dice':DiceLoss()}
         if 'name' not in list(optimizer_opts.keys()):
             optimizer_opts['name'] = 'adam'
         self.optimizer = optimizers[optimizer_opts.pop('name')](
@@ -212,6 +220,7 @@ class ModelTrainer:
         self.checkpoints_dir=checkpoints_dir
         self.tensor_dataset=tensor_dataset
         self.transforms=transforms
+        self.semantic_segmentation=semantic_segmentation
 
     def save_checkpoint(self,model,epoch):
         os.makedirs(self.checkpoints_dir,exist_ok=True)
@@ -358,7 +367,8 @@ class ModelTrainer:
                 y_true = y_true.cuda()
 
             if self.tensor_dataset:
-                X=self.transforms['train'](X)
+                if self.semantic_segmentation: X,y_true=self.transforms['train'](X,y_true)
+                else: X=self.transforms['train'](X)
 
             y_pred = self.model(X)
             # y_true=y_true.argmax(dim=1)
@@ -411,7 +421,8 @@ class ModelTrainer:
                     y_true = y_true.cuda()
 
                 if self.tensor_dataset:
-                    X=self.transforms['val'](X)
+                    if self.semantic_segmentation: X,y_true=self.transforms['val'](X,y_true)
+                    else: X=self.transforms['val'](X)
 
                 y_pred = self.model(X)
                 # y_true=y_true.argmax(dim=1)

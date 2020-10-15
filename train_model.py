@@ -78,6 +78,41 @@ def generate_kornia_transforms(image_size=224, resize=256, mean=[], std=[], incl
             transforms[k]=transforms[k].cuda()
     return transforms
 
+class SegmentationTransform(nn.Module):
+    def __init__(self,resize,image_size,mean,std,include_jitter=False,Set="train"):
+        super().__init__()
+        self.resize=G.Resize((resize,resize))
+        self.jit=K.ColorJitter(brightness=0.4, contrast=0.4,
+                                   saturation=0.4, hue=0.1) if include_jitter else (lambda x: x)
+        self.rotations=nn.Module([K.RandomHorizontalFlip(p=0.5),
+               K.RandomVerticalFlip(p=0.5),
+               K.RandomRotation(90),
+               K.RandomResizedCrop((image_size,image_size))])
+        self.normalize=K.Normalize(mean,std)
+        self.crop=K.CenterCrop((image_size,image_size))
+        self.Set=Set
+
+    def forward(self,input,mask):
+        if self.Set=='train':
+            img=self.jit(self.resize(input))
+            for rotation in self.rotations: img=rotation(img)
+            img=self.normalize(img)
+            mask_out=self.resize(mask)
+            for rotation in self.rotations: mask_out=rotation(mask_out,rotation._params)
+        else:
+            img=self.normalize(self.crop(self.resize(img)))
+            mask_out=self.crop(self.resize(mask_out))
+        return img,mask_out
+
+def generate_kornia_segmentation_transforms(image_size=224, resize=256, mean=[], std=[], include_jitter=False):  # add this then IoU metric
+    mean=torch.tensor(mean) if mean else torch.tensor([0.5, 0.5, 0.5])
+    std=torch.tensor(std) if std else torch.tensor([0.1, 0.1, 0.1])
+    transforms={k:SegmentationTransform(resize,image_size,mean,std,include_jitter=False,Set=k) for k in ['train','val']}
+    if torch.cuda.is_available():
+        for k in transforms:
+            transforms[k]=transforms[k].cuda()
+    return transforms
+
 def train_model(inputs_dir='inputs_training',
                 learning_rate=1e-4,
                 n_epochs=300,
@@ -101,19 +136,22 @@ def train_model(inputs_dir='inputs_training',
                 checkpoints_dir="checkpoints",
                 tensor_dataset=False,
                 pickle_dataset=False,
-                label_map=dict()
+                label_map=dict(),
+                semantic_segmentation=False
                 ):
     if extract_embeddings: assert predict, "Must be in prediction mode to extract embeddings"
     if tensor_dataset: assert not pickle_dataset and not class_balance, "Class balance not implemented, cannot have pickle and tensor classes activated"
+    if semantic_segmentation: assert tensor_dataset==True, "For now, can only perform semantic segmentation with TensorDataset"
     torch.cuda.set_device(gpu_id)
     transformers=generate_transformers if not tensor_dataset else generate_kornia_transforms
+    if semantic_segmentation: transformers=generate_kornia_segmentation_transforms
     transformers = transformers(
         image_size=crop_size, resize=resize, mean=mean, std=std)
     if not extract_embeddings:
         if tensor_dataset:
             datasets = {x: torch.load(os.path.join(inputs_dir,f"{x}_data.pth")) for x in ['train','val']}
             for k in datasets:
-                if len(datasets[k].tensors[1].shape)>1: datasets[k]=TensorDataset(datasets[k].tensors[0],datasets[k].tensors[1].flatten())
+                if len(datasets[k].tensors[1].shape)>1 and not semantic_segmentation: datasets[k]=TensorDataset(datasets[k].tensors[0],datasets[k].tensors[1].flatten())
         elif pickle_dataset:
             datasets = {x: PickleDataset(os.path.join(inputs_dir,f"{x}_data.pkl"),transformers[x],label_map) for x in ['train','val']}
         else:
@@ -124,7 +162,8 @@ def train_model(inputs_dir='inputs_training',
             datasets[x], batch_size=batch_size, shuffle=(x == 'train')) for x in datasets}
 
     model = generate_model(architecture,
-                           num_classes)
+                           num_classes,
+                           semantic_segmentation=semantic_segmentation)
 
     if torch.cuda.is_available():
         model = model.cuda()
@@ -144,14 +183,15 @@ def train_model(inputs_dir='inputs_training',
                            None if predict else dataloaders['val'],
                            optimizer_opts,
                            scheduler_opts,
-                           loss_fn='ce',
+                           loss_fn='ce' if not semantic_segmentation else 'dice',
                            checkpoints_dir=checkpoints_dir,
                            tensor_dataset=tensor_dataset,
-                           transforms=transformers)
+                           transforms=transformers,
+                           semantic_segmentation=semantic_segmentation)
 
     if not predict:
 
-        if class_balance:
+        if class_balance and not semantic_segmentation:
             trainer.add_class_balance_loss(datasets['train'].targets if not tensor_dataset else datasets['train'].tensors[1].numpy().flatten())
 
         trainer, min_val_loss, best_epoch=trainer.fit(dataloaders['train'],verbose=verbose)
