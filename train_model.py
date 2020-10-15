@@ -82,6 +82,7 @@ class SegmentationTransform(nn.Module):
     def __init__(self,resize,image_size,mean,std,include_jitter=False,Set="train"):
         super().__init__()
         self.resize=G.Resize((resize,resize))
+        self.mask_resize=G.Resize((resize,resize),interpolation='nearest')
         self.jit=K.ColorJitter(brightness=0.4, contrast=0.4,
                                    saturation=0.4, hue=0.1) if include_jitter else (lambda x: x)
         self.rotations=nn.ModuleList([K.RandomHorizontalFlip(p=0.5),
@@ -97,11 +98,11 @@ class SegmentationTransform(nn.Module):
             img=self.jit(self.resize(input))
             for rotation in self.rotations: img=rotation(img)
             img=self.normalize(img)
-            mask_out=self.resize(mask)
+            mask_out=self.mask_resize(mask)
             for rotation in self.rotations: mask_out=rotation(mask_out,rotation._params)
         else:
             img=self.normalize(self.crop(self.resize(img)))
-            mask_out=self.crop(self.resize(mask_out))
+            mask_out=self.crop(self.mask_resize(mask_out))
         return img,mask_out
 
 def generate_kornia_segmentation_transforms(image_size=224, resize=256, mean=[], std=[], include_jitter=False):  # add this then IoU metric
