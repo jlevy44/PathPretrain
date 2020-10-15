@@ -81,8 +81,8 @@ def generate_kornia_transforms(image_size=224, resize=256, mean=[], std=[], incl
 class SegmentationTransform(nn.Module):
     def __init__(self,resize,image_size,mean,std,include_jitter=False,Set="train"):
         super().__init__()
-        self.resize=G.Resize((resize,resize))
-        self.mask_resize=G.Resize((resize,resize),interpolation='nearest')
+        self.resize=G.Resize((resize,resize),align_corners=False)
+        self.mask_resize=G.Resize((resize,resize),interpolation='nearest',align_corners=False)
         self.jit=K.ColorJitter(brightness=0.4, contrast=0.4,
                                    saturation=0.4, hue=0.1) if include_jitter else (lambda x: x)
         self.rotations=nn.ModuleList([K.RandomHorizontalFlip(p=0.5),
