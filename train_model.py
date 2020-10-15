@@ -84,7 +84,7 @@ class SegmentationTransform(nn.Module):
         self.resize=G.Resize((resize,resize))
         self.jit=K.ColorJitter(brightness=0.4, contrast=0.4,
                                    saturation=0.4, hue=0.1) if include_jitter else (lambda x: x)
-        self.rotations=nn.Module([K.RandomHorizontalFlip(p=0.5),
+        self.rotations=nn.ModuleList([K.RandomHorizontalFlip(p=0.5),
                K.RandomVerticalFlip(p=0.5),
                K.RandomRotation(90),
                K.RandomResizedCrop((image_size,image_size))])
