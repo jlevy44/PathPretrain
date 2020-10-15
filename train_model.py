@@ -88,7 +88,7 @@ class SegmentationTransform(nn.Module):
         self.rotations=nn.ModuleList([K.RandomHorizontalFlip(p=0.5),
                K.RandomVerticalFlip(p=0.5),
                K.RandomRotation(90),
-               K.RandomResizedCrop((image_size,image_size))])
+               K.RandomResizedCrop((image_size,image_size),interpolation="nearest")])
         self.normalize=K.Normalize(mean,std)
         self.crop=K.CenterCrop((image_size,image_size))
         self.Set=Set
