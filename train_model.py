@@ -111,9 +111,8 @@ class SegmentationTransform(nn.Module):
             img=self.normalize(img)
             # for i in range(len(self.rotations_mask)): mask_out=self.rotations_mask[i](mask_out,self.rotations[i]._params)
         else:
-            print(self.Set)
             img=self.normalize(self.crop(self.resize(input)))
-            mask_out=self.mask_crop(self.mask_resize(mask_out))
+            mask_out=self.mask_crop(self.mask_resize(mask))
         return img,mask_out.squeeze(1).long()#[:,0,...]
 
 def generate_kornia_segmentation_transforms(image_size=224, resize=256, mean=[], std=[], include_jitter=False):  # add this then IoU metric
