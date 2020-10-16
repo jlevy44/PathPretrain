@@ -99,17 +99,19 @@ class SegmentationTransform(nn.Module):
         self.Set=Set
 
     def forward(self,input,mask):
-
-        mask=torch.cat([mask.unsqueeze(0)]*3,1)
-        print(mask.shape)
+        mask=torch.cat([mask.unsqueeze(1)]*3,1)
+        print(1,mask.shape)
         if self.Set=='train':
             img=self.jit(self.resize(input))
+            print(2,img.shape)
             for rotation in self.rotations: img=rotation(img)
+            print(3,img.shape)
             img=self.normalize(img)
+            print(4,img.shape)
             mask_out=self.mask_resize(mask)
-            print(mask_out.shape)
+            print(5,mask_out.shape)
             for i in range(len(self.rotations_mask)): mask_out=self.rotations_mask[i](mask_out,self.rotations[i]._params)
-            print(mask_out.shape)
+            print(6,mask_out.shape)
         else:
             img=self.normalize(self.crop(self.resize(img)))
             mask_out=self.mask_crop(self.mask_resize(mask_out))
