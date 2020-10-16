@@ -151,7 +151,7 @@ def train_model(inputs_dir='inputs_training',
                 semantic_segmentation=False
                 ):
     if extract_embeddings: assert predict, "Must be in prediction mode to extract embeddings"
-    if tensor_dataset: assert not pickle_dataset and not class_balance, "Class balance not implemented, cannot have pickle and tensor classes activated"
+    if tensor_dataset: assert not pickle_dataset, "Cannot have pickle and tensor classes activated"
     if semantic_segmentation: assert tensor_dataset==True, "For now, can only perform semantic segmentation with TensorDataset"
     torch.cuda.set_device(gpu_id)
     transformers=generate_transformers if not tensor_dataset else generate_kornia_transforms
