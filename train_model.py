@@ -85,33 +85,36 @@ class SegmentationTransform(nn.Module):
         self.mask_resize=G.Resize((resize,resize),interpolation='nearest',align_corners=False)
         self.jit=K.ColorJitter(brightness=0.4, contrast=0.4,
                                    saturation=0.4, hue=0.1) if include_jitter else (lambda x: x)
-        self.rotations=nn.ModuleList([
-               K.augmentation.RandomAffine([-90., 90.], [0., 0.15], [0.5, 1.5], [0., 0.15])
-               # K.RandomHorizontalFlip(p=0.5),
-               # K.RandomVerticalFlip(p=0.5),
-               # K.RandomRotation(90),#K.RandomResizedCrop((image_size,image_size),interpolation="nearest")
-               ])
-        self.rotations_mask=nn.ModuleList([
-               K.augmentation.RandomAffine([-90., 90.], [0., 0.15], [0.5, 1.5], [0., 0.15],resample="NEAREST")
-               ])
+        # self.rotations=nn.ModuleList([
+        #        K.augmentation.RandomAffine([-90., 90.], [0., 0.15], [0.5, 1.5], [0., 0.15])
+        #        # K.RandomHorizontalFlip(p=0.5),
+        #        # K.RandomVerticalFlip(p=0.5),
+        #        # K.RandomRotation(90),#K.RandomResizedCrop((image_size,image_size),interpolation="nearest")
+        #        ])
+        # self.rotations_mask=nn.ModuleList([
+        #        K.augmentation.RandomAffine([-90., 90.], [0., 0.15], [0.5, 1.5], [0., 0.15],resample="NEAREST")
+        #        ])
+        self.affine=K.augmentation.RandomAffine([-90., 90.], [0., 0.15], [0.5, 1.5], [0., 0.15])
+        self.affine_mask=K.augmentation.RandomAffine([-90., 90.], [0., 0.15], [0.5, 1.5], [0., 0.15],resample="NEAREST")
         self.normalize=K.Normalize(mean,std)
         self.crop,self.mask_crop=K.CenterCrop((image_size,image_size)),K.CenterCrop((image_size,image_size),resample="NEAREST")
         self.Set=Set
 
     def forward(self,input,mask):
-        mask=torch.cat([mask.unsqueeze(1)]*3,1)
+        mask=mask.unsqueeze(1)#torch.cat([mask.unsqueeze(1)]*3,1)
         print(1,mask.shape)
         if self.Set=='train':
             img=self.jit(self.resize(input))
             print(2,img.shape)
-            for rotation in self.rotations: img=rotation(img)
-            print(3,img.shape)
-            img=self.normalize(img)
-            print(4,img.shape)
             mask_out=self.mask_resize(mask)
+            print(3,mask_out.shape)
+            img=self.affine(img)
+            print(4,img.shape)
+            mask_out=self.affine_mask(mask_out)
             print(5,mask_out.shape)
-            for i in range(len(self.rotations_mask)): mask_out=self.rotations_mask[i](mask_out,self.rotations[i]._params)
-            print(6,mask_out.shape)
+            # for rotation in self.rotations: img=rotation(img)
+            img=self.normalize(img)
+            # for i in range(len(self.rotations_mask)): mask_out=self.rotations_mask[i](mask_out,self.rotations[i]._params)
         else:
             img=self.normalize(self.crop(self.resize(img)))
             mask_out=self.mask_crop(self.mask_resize(mask_out))
