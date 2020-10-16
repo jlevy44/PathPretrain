@@ -99,6 +99,7 @@ class SegmentationTransform(nn.Module):
         self.Set=Set
 
     def forward(self,input,mask):
+        print(mask.shape,mask)
         mask=mask.unsqueeze(0)
         if self.Set=='train':
             img=self.jit(self.resize(input))
