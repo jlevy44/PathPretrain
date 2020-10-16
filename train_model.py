@@ -94,24 +94,19 @@ class SegmentationTransform(nn.Module):
         # self.rotations_mask=nn.ModuleList([
         #        K.augmentation.RandomAffine([-90., 90.], [0., 0.15], [0.5, 1.5], [0., 0.15],resample="NEAREST")
         #        ])
-        self.affine=K.augmentation.RandomAffine([-90., 90.], [0., 0.15], [0.5, 1.5], [0., 0.15])
-        self.affine_mask=K.augmentation.RandomAffine([-90., 90.], [0., 0.15], [0.5, 1.5], [0., 0.15],resample="NEAREST")
+        self.affine=K.augmentation.RandomAffine([-90., 90.], [0., 0.15], None [0., 0.15])
+        self.affine_mask=K.augmentation.RandomAffine([-90., 90.], [0., 0.15], None, [0., 0.15],resample="NEAREST")
         self.normalize=K.Normalize(mean,std)
         self.crop,self.mask_crop=K.CenterCrop((image_size,image_size)),K.CenterCrop((image_size,image_size),resample="NEAREST")
         self.Set=Set
 
     def forward(self,input,mask):
         mask=mask.unsqueeze(1)#torch.cat([mask.unsqueeze(1)]*3,1)
-        print(1,mask.shape)
         if self.Set=='train':
             img=self.jit(self.resize(input))
-            print(2,img.shape)
             mask_out=self.mask_resize(mask)
-            print(3,mask_out.shape)
             img=self.affine(img)
-            print(4,img.shape)
             mask_out=self.affine_mask(mask_out)
-            print(5,mask_out.shape)
             # for rotation in self.rotations: img=rotation(img)
             img=self.normalize(img)
             # for i in range(len(self.rotations_mask)): mask_out=self.rotations_mask[i](mask_out,self.rotations[i]._params)
