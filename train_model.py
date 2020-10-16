@@ -101,7 +101,7 @@ class SegmentationTransform(nn.Module):
         self.Set=Set
 
     def forward(self,input,mask):
-        mask=mask.unsqueeze(1)#torch.cat([mask.unsqueeze(1)]*3,1)
+        mask=mask.unsqueeze(1).float()#torch.cat([mask.unsqueeze(1)]*3,1)
         if self.Set=='train':
             img=self.jit(self.resize(input))
             mask_out=self.mask_resize(mask)
