@@ -194,7 +194,7 @@ def train_model(inputs_dir='inputs_training',
                            None if predict else dataloaders['val'],
                            optimizer_opts,
                            scheduler_opts,
-                           loss_fn='ce' if not semantic_segmentation else 'dice',
+                           loss_fn='dice' if (semantic_segmentation and not class_balance) else 'ce',
                            checkpoints_dir=checkpoints_dir,
                            tensor_dataset=tensor_dataset,
                            transforms=transformers,
@@ -202,7 +202,7 @@ def train_model(inputs_dir='inputs_training',
 
     if not predict:
 
-        if class_balance and not semantic_segmentation:
+        if class_balance:
             trainer.add_class_balance_loss(datasets['train'].targets if not tensor_dataset else datasets['train'].tensors[1].numpy().flatten())
 
         trainer, min_val_loss, best_epoch=trainer.fit(dataloaders['train'],verbose=verbose)
