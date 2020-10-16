@@ -111,7 +111,8 @@ class SegmentationTransform(nn.Module):
             img=self.normalize(img)
             # for i in range(len(self.rotations_mask)): mask_out=self.rotations_mask[i](mask_out,self.rotations[i]._params)
         else:
-            img=self.normalize(self.crop(self.resize(img)))
+            print(self.Set)
+            img=self.normalize(self.crop(self.resize(input)))
             mask_out=self.mask_crop(self.mask_resize(mask_out))
         return img,mask_out.squeeze(1).long()#[:,0,...]
 
