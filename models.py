@@ -431,7 +431,7 @@ class ModelTrainer:
                         y_true.detach().cpu().numpy().astype(int).flatten())
                     y_pred_numpy = ((y_pred if not self.bce else self.sigmoid(
                         y_pred)).detach().cpu().numpy()).astype(float)
-                    if self.loss_fn_name == 'ce':
+                    if self.loss_fn_name in ['ce','dice']:
                         y_pred_numpy = y_pred_numpy.argmax(axis=1)
                     Y['pred'].append(y_pred_numpy.flatten())
                 loss = self.calc_val_loss(y_pred, y_true)  # .view(-1,1)
