@@ -94,7 +94,7 @@ class SegmentationTransform(nn.Module):
         # self.rotations_mask=nn.ModuleList([
         #        K.augmentation.RandomAffine([-90., 90.], [0., 0.15], [0.5, 1.5], [0., 0.15],resample="NEAREST")
         #        ])
-        self.affine=K.augmentation.RandomAffine([-90., 90.], [0., 0.15], None [0., 0.15])
+        self.affine=K.augmentation.RandomAffine([-90., 90.], [0., 0.15], None, [0., 0.15])
         self.affine_mask=K.augmentation.RandomAffine([-90., 90.], [0., 0.15], None, [0., 0.15],resample="NEAREST")
         self.normalize=K.Normalize(mean,std)
         self.crop,self.mask_crop=K.CenterCrop((image_size,image_size)),K.CenterCrop((image_size,image_size),resample="NEAREST")
