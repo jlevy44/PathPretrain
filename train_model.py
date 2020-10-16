@@ -99,18 +99,20 @@ class SegmentationTransform(nn.Module):
         self.Set=Set
 
     def forward(self,input,mask):
-        print(mask.shape,mask)
-        mask=mask.unsqueeze(0)
+
+        mask=torch.cat([mask.unsqueeze(0)]*3,1)
+        print(mask.shape)
         if self.Set=='train':
             img=self.jit(self.resize(input))
             for rotation in self.rotations: img=rotation(img)
             img=self.normalize(img)
             mask_out=self.mask_resize(mask)
+            print(mask_out.shape)
             for i in range(len(self.rotations_mask)): mask_out=self.rotations_mask[i](mask_out,self.rotations[i]._params)
         else:
             img=self.normalize(self.crop(self.resize(img)))
             mask_out=self.mask_crop(self.mask_resize(mask_out))
-        return img,mask_out.squeeze(0).long()
+        return img,mask_out[:,0,...].long()#.squeeze(0)
 
 def generate_kornia_segmentation_transforms(image_size=224, resize=256, mean=[], std=[], include_jitter=False):  # add this then IoU metric
     mean=torch.tensor(mean) if mean else torch.tensor([0.5, 0.5, 0.5])
