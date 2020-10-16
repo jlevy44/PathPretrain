@@ -7,7 +7,7 @@ import torch
 from torch import nn
 from torchvision import models
 from torchvision.models.mobilenet import MobileNetV2
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, f1_score
 #from apex import amp
 import copy
 import numpy as np
@@ -188,7 +188,7 @@ class ModelTrainer:
             Number of training batches for epoch.
     """
 
-    def __init__(self, model, n_epoch=300, validation_dataloader=None, optimizer_opts=dict(name='adam', lr=1e-3, weight_decay=1e-4), scheduler_opts=dict(scheduler='warm_restarts', lr_scheduler_decay=0.5, T_max=10, eta_min=5e-8, T_mult=2), loss_fn='ce', reduction='mean', num_train_batches=None, opt_level='O1', checkpoints_dir='checkpoints',tensor_dataset=False,transforms=None,semantic_segmentation=False):
+    def __init__(self, model, n_epoch=300, validation_dataloader=None, optimizer_opts=dict(name='adam', lr=1e-3, weight_decay=1e-4), scheduler_opts=dict(scheduler='warm_restarts', lr_scheduler_decay=0.5, T_max=10, eta_min=5e-8, T_mult=2), loss_fn='ce', reduction='mean', num_train_batches=None, opt_level='O1', checkpoints_dir='checkpoints',tensor_dataset=False,transforms=None,semantic_segmentation=False,save_metric='loss'):
 
         self.model = model
         # self.amp_handle = amp.init(enabled=True)
@@ -221,6 +221,7 @@ class ModelTrainer:
         self.tensor_dataset=tensor_dataset
         self.transforms=transforms
         self.semantic_segmentation=semantic_segmentation
+        self.save_metric=save_metric
 
     def save_checkpoint(self,model,epoch):
         os.makedirs(self.checkpoints_dir,exist_ok=True)
@@ -426,24 +427,26 @@ class ModelTrainer:
 
                 y_pred = self.model(X)
                 # y_true=y_true.argmax(dim=1)
-                if save_predictions:
-                    Y['true'].append(
-                        y_true.detach().cpu().numpy().astype(int).flatten())
-                    y_pred_numpy = ((y_pred if not self.bce else self.sigmoid(
-                        y_pred)).detach().cpu().numpy()).astype(float)
-                    if self.loss_fn_name in ['ce','dice']:
-                        y_pred_numpy = y_pred_numpy.argmax(axis=1)
-                    Y['pred'].append(y_pred_numpy.flatten())
+                # if save_predictions:
+                Y['true'].append(
+                    y_true.detach().cpu().numpy().astype(int).flatten())
+                y_pred_numpy = ((y_pred if not self.bce else self.sigmoid(
+                    y_pred)).detach().cpu().numpy()).astype(float)
+                if self.loss_fn_name in ['ce','dice']:
+                    y_pred_numpy = y_pred_numpy.argmax(axis=1)
+                Y['pred'].append(y_pred_numpy.flatten())
+
                 loss = self.calc_val_loss(y_pred, y_true)  # .view(-1,1)
                 val_loss = loss.item()
                 running_loss += val_loss
                 if self.verbosity >=1:
                     print("Epoch {}[{}/{}] Val Loss:{}".format(epoch, i, n_batch, val_loss))
-        if print_val_confusion and save_predictions:
-            y_pred, y_true = np.hstack(Y['pred']), np.hstack(Y['true'])
-            print(classification_report(y_true, y_pred))
+        # if print_val_confusion and save_predictions:
+        y_pred, y_true = np.hstack(Y['pred']), np.hstack(Y['true'])
+        print(classification_report(y_true, y_pred))
+
         running_loss /= n_batch
-        return running_loss
+        return running_loss, f1_score(y_true, y_pred,average='macro')
 
     # @pysnooper.snoop("test_loop.log")
     def test_loop(self, test_dataloader):
@@ -513,6 +516,7 @@ class ModelTrainer:
         # choose model with best f1
         self.train_losses = []
         self.val_losses = []
+        self.val_f1 = []
         if verbose:
             self.verbosity+=1
         for epoch in range(self.n_epoch):
@@ -521,25 +525,26 @@ class ModelTrainer:
             current_time = time.time()
             train_time = current_time - start_time
             self.train_losses.append(train_loss)
-            val_loss = self.val_loop(epoch, self.validation_dataloader,
+            val_loss, val_f1 = self.val_loop(epoch, self.validation_dataloader,
                                      print_val_confusion=print_val_confusion, save_predictions=save_val_predictions)
             val_time = time.time() - current_time
             self.val_losses.append(val_loss)
+            self.val_f1.append(val_f1)
             if True:#verbose and not (epoch % print_every):
                 if plot_training_curves:
                     self.plot_train_val_curves(plot_save_file)
                 print("Epoch {}: Train Loss {}, Val Loss {}, Train Time {}, Val Time {}".format(
                     epoch, train_loss, val_loss, train_time, val_time))
-            if val_loss <= min(self.val_losses) and save_model:
+            if (val_loss <= min(self.val_losses) if self.save_metric=='loss' else val_f1 >= max(self.val_f1)) and save_model:
                 print("New best model at epoch {}".format(epoch))
-                min_val_loss = val_loss
+                min_val_loss_f1 = val_loss if self.save_metric=='loss' else val_f1
                 best_epoch = epoch
                 best_model_state_dict = copy.deepcopy(self.model.state_dict())
                 self.save_checkpoint(best_model_state_dict,epoch)
         if save_model:
             print("Saving best model at epoch {}".format(best_epoch))
             self.model.load_state_dict(best_model_state_dict)
-        return self, min_val_loss, best_epoch
+        return self, min_val_loss_f1, best_epoch
 
     def plot_train_val_curves(self, save_file=None):
         """Plots training and validation curves.

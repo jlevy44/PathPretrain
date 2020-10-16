@@ -148,8 +148,10 @@ def train_model(inputs_dir='inputs_training',
                 tensor_dataset=False,
                 pickle_dataset=False,
                 label_map=dict(),
-                semantic_segmentation=False
+                semantic_segmentation=False,
+                save_metric="loss"
                 ):
+    assert save_metric in ['loss','f1']
     if extract_embeddings: assert predict, "Must be in prediction mode to extract embeddings"
     if tensor_dataset: assert not pickle_dataset, "Cannot have pickle and tensor classes activated"
     if semantic_segmentation: assert tensor_dataset==True, "For now, can only perform semantic segmentation with TensorDataset"
@@ -198,14 +200,15 @@ def train_model(inputs_dir='inputs_training',
                            checkpoints_dir=checkpoints_dir,
                            tensor_dataset=tensor_dataset,
                            transforms=transformers,
-                           semantic_segmentation=semantic_segmentation)
+                           semantic_segmentation=semantic_segmentation,
+                           save_metric=save_metric)
 
     if not predict:
 
         if class_balance:
             trainer.add_class_balance_loss(datasets['train'].targets if not tensor_dataset else datasets['train'].tensors[1].numpy().flatten())
 
-        trainer, min_val_loss, best_epoch=trainer.fit(dataloaders['train'],verbose=verbose)
+        trainer, min_val_loss_f1, best_epoch=trainer.fit(dataloaders['train'],verbose=verbose)
 
         torch.save(trainer.model.state_dict(), model_save_loc)
 
@@ -215,6 +218,7 @@ def train_model(inputs_dir='inputs_training',
         trainer.model.load_state_dict(torch.load(model_save_loc,map_location=f"cuda:{gpu_id}" if gpu_id>=0 else "cpu"))
 
         if extract_embeddings and extract_embeddings_df:
+            assert not semantic_segmentation, "Semantic Segmentation not implemented for whole slide segmentation" 
             trainer.model=nn.Sequential(trainer.model.features,Reshape())
             patch_info=load_sql_df(extract_embeddings_df,resize)
             dataset=NPYDataset(patch_info,extract_embeddings,transformers["test"],tensor_dataset)
