@@ -86,25 +86,30 @@ class SegmentationTransform(nn.Module):
         self.jit=K.ColorJitter(brightness=0.4, contrast=0.4,
                                    saturation=0.4, hue=0.1) if include_jitter else (lambda x: x)
         self.rotations=nn.ModuleList([
+               K.augmentation.RandomAffine([-90., 90.], [0., 0.15], [0.5, 1.5], [0., 0.15])
                # K.RandomHorizontalFlip(p=0.5),
                # K.RandomVerticalFlip(p=0.5),
                # K.RandomRotation(90),#K.RandomResizedCrop((image_size,image_size),interpolation="nearest")
                ])
+        self.rotations_mask=nn.ModuleList([
+               K.augmentation.RandomAffine([-90., 90.], [0., 0.15], [0.5, 1.5], [0., 0.15],resample="NEAREST")
+               ])
         self.normalize=K.Normalize(mean,std)
-        self.crop=K.CenterCrop((image_size,image_size))
+        self.crop,self.mask_crop=K.CenterCrop((image_size,image_size)),K.CenterCrop((image_size,image_size),resample="NEAREST")
         self.Set=Set
 
     def forward(self,input,mask):
+        mask=mask.unsqueeze(0)
         if self.Set=='train':
             img=self.jit(self.resize(input))
             for rotation in self.rotations: img=rotation(img)
             img=self.normalize(img)
             mask_out=self.mask_resize(mask)
-            for rotation in self.rotations: mask_out=rotation(mask_out,rotation._params)
+            for i in range(len(self.rotations_mask)): mask_out=self.rotations_mask[i](mask_out,self.rotations[i]._params)
         else:
             img=self.normalize(self.crop(self.resize(img)))
-            mask_out=self.crop(self.mask_resize(mask_out))
-        return img,mask_out
+            mask_out=self.mask_crop(self.mask_resize(mask_out))
+        return img,mask_out.squeeze(0).long()
 
 def generate_kornia_segmentation_transforms(image_size=224, resize=256, mean=[], std=[], include_jitter=False):  # add this then IoU metric
     mean=torch.tensor(mean) if mean else torch.tensor([0.5, 0.5, 0.5])
