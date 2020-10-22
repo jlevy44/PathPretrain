@@ -149,7 +149,8 @@ def train_model(inputs_dir='inputs_training',
                 pickle_dataset=False,
                 label_map=dict(),
                 semantic_segmentation=False,
-                save_metric="loss"
+                save_metric="loss",
+                custom_dataset=None
                 ):
     assert save_metric in ['loss','f1']
     if extract_embeddings: assert predict, "Must be in prediction mode to extract embeddings"
@@ -170,6 +171,10 @@ def train_model(inputs_dir='inputs_training',
         else:
             datasets = {x: Datasets.ImageFolder(os.path.join(
                 inputs_dir, x), transformers[x]) for x in ['train', 'val', 'test']}
+
+        if custom_dataset is not None:
+            datasets['custom']=custom_dataset
+            predict_set='custom'
 
         dataloaders = {x: DataLoader(
             datasets[x], batch_size=batch_size, shuffle=(x == 'train')) for x in datasets}
@@ -212,13 +217,15 @@ def train_model(inputs_dir='inputs_training',
 
         torch.save(trainer.model.state_dict(), model_save_loc)
 
+        return trainer.model
+
     else:
         # assert not tensor_dataset, "Only ImageFolder and NPYDatasets allowed"
 
         trainer.model.load_state_dict(torch.load(model_save_loc,map_location=f"cuda:{gpu_id}" if gpu_id>=0 else "cpu"))
 
         if extract_embeddings and extract_embeddings_df:
-            assert not semantic_segmentation, "Semantic Segmentation not implemented for whole slide segmentation" 
+            assert not semantic_segmentation, "Semantic Segmentation not implemented for whole slide segmentation"
             trainer.model=nn.Sequential(trainer.model.features,Reshape())
             patch_info=load_sql_df(extract_embeddings_df,resize)
             dataset=NPYDataset(patch_info,extract_embeddings,transformers["test"],tensor_dataset)
@@ -232,6 +239,8 @@ def train_model(inputs_dir='inputs_training',
         # Y['true'] = datasets[predict_set].targets
 
         torch.save(Y, predictions_save_path)
+
+        return Y
 
 
 if __name__ == '__main__':
