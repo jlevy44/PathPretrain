@@ -24,7 +24,6 @@ class Reshape(nn.Module):
         return x.view(x.shape[0],-1)
 
 def generate_transformers(image_size=224, resize=256, mean=[], std=[], include_jitter=False):
-
     train_transform = [transforms.Resize((resize,resize))]
     if include_jitter:
         train_transform.append(transforms.ColorJitter(brightness=0.4,
@@ -150,31 +149,34 @@ def train_model(inputs_dir='inputs_training',
                 label_map=dict(),
                 semantic_segmentation=False,
                 save_metric="loss",
-                custom_dataset=None
+                custom_dataset=None,
+                save_predictions=True
                 ):
     assert save_metric in ['loss','f1']
     if extract_embeddings: assert predict, "Must be in prediction mode to extract embeddings"
     if tensor_dataset: assert not pickle_dataset, "Cannot have pickle and tensor classes activated"
-    if semantic_segmentation: assert tensor_dataset==True, "For now, can only perform semantic segmentation with TensorDataset"
+    if semantic_segmentation and custom_dataset is None: assert tensor_dataset==True, "For now, can only perform semantic segmentation with TensorDataset"
     torch.cuda.set_device(gpu_id)
     transformers=generate_transformers if not tensor_dataset else generate_kornia_transforms
     if semantic_segmentation: transformers=generate_kornia_segmentation_transforms
     transformers = transformers(
         image_size=crop_size, resize=resize, mean=mean, std=std)
     if not extract_embeddings:
-        if tensor_dataset:
-            datasets = {x: torch.load(os.path.join(inputs_dir,f"{x}_data.pth")) for x in ['train','val']}
-            for k in datasets:
-                if len(datasets[k].tensors[1].shape)>1 and not semantic_segmentation: datasets[k]=TensorDataset(datasets[k].tensors[0],datasets[k].tensors[1].flatten())
-        elif pickle_dataset:
-            datasets = {x: PickleDataset(os.path.join(inputs_dir,f"{x}_data.pkl"),transformers[x],label_map) for x in ['train','val']}
-        else:
-            datasets = {x: Datasets.ImageFolder(os.path.join(
-                inputs_dir, x), transformers[x]) for x in ['train', 'val', 'test']}
-
         if custom_dataset is not None:
+            assert predict
+            datasets={}
             datasets['custom']=custom_dataset
             predict_set='custom'
+        else:
+            if tensor_dataset:
+                datasets = {x: torch.load(os.path.join(inputs_dir,f"{x}_data.pth")) for x in ['train','val']}
+                for k in datasets:
+                    if len(datasets[k].tensors[1].shape)>1 and not semantic_segmentation: datasets[k]=TensorDataset(datasets[k].tensors[0],datasets[k].tensors[1].flatten())
+            elif pickle_dataset:
+                datasets = {x: PickleDataset(os.path.join(inputs_dir,f"{x}_data.pkl"),transformers[x],label_map) for x in ['train','val']}
+            else:
+                datasets = {x: Datasets.ImageFolder(os.path.join(
+                    inputs_dir, x), transformers[x]) for x in ['train', 'val', 'test']}
 
         dataloaders = {x: DataLoader(
             datasets[x], batch_size=batch_size, shuffle=(x == 'train')) for x in datasets}
@@ -238,7 +240,7 @@ def train_model(inputs_dir='inputs_training',
 
         # Y['true'] = datasets[predict_set].targets
 
-        torch.save(Y, predictions_save_path)
+        if save_predictions: torch.save(Y, predictions_save_path)
 
         return Y
 

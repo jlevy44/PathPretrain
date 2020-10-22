@@ -16,6 +16,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from sklearn.utils.class_weight import compute_class_weight
 from kornia.losses import DiceLoss
+import tqdm
 
 matplotlib.use('Agg')
 sns.set()
@@ -467,8 +468,10 @@ class ModelTrainer:
         y_pred = []
         Y_true = []
         running_loss = 0.
+        n_batch = len(
+            test_dataloader.dataset) // test_dataloader.batch_size
         with torch.no_grad():
-            for i, (X, y_true) in enumerate(test_dataloader):
+            for i, (X, y_true) in tqdm.tqdm(enumerate(test_dataloader),total=n_batch):
                 #X = Variable(batch[0],requires_grad=False)
                 if torch.cuda.is_available():
                     X = X.cuda()
