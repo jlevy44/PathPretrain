@@ -81,7 +81,7 @@ class SegmentationTransform(nn.Module):
     def __init__(self,resize,image_size,mean,std,include_jitter=False,Set="train"):
         super().__init__()
         self.resize=G.Resize((resize,resize),align_corners=False)
-        self.mask_resize=G.Resize((resize,resize),interpolation='nearest',align_corners=False)
+        self.mask_resize=G.Resize((resize,resize),interpolation='nearest',align_corners=False)#lambda x: torch.nn.functional.interpolate(x, size=(resize,resize), mode='nearest', align_corners=False)#
         self.jit=K.ColorJitter(brightness=0.4, contrast=0.4,
                                    saturation=0.4, hue=0.1) if include_jitter else (lambda x: x)
         # self.rotations=nn.ModuleList([
@@ -94,7 +94,7 @@ class SegmentationTransform(nn.Module):
         #        K.augmentation.RandomAffine([-90., 90.], [0., 0.15], [0.5, 1.5], [0., 0.15],resample="NEAREST")
         #        ])
         self.affine=K.augmentation.RandomAffine([-90., 90.], [0., 0.15], None, [0., 0.15])
-        self.affine_mask=K.augmentation.RandomAffine([-90., 90.], [0., 0.15], None, [0., 0.15],resample="NEAREST")
+        self.affine_mask=K.augmentation.RandomAffine([-90., 90.], [0., 0.15], None, [0., 0.15],resample="NEAREST",align_corners=False)
         self.normalize=K.Normalize(mean,std)
         self.crop,self.mask_crop=K.CenterCrop((image_size,image_size)),K.CenterCrop((image_size,image_size),resample="NEAREST")
         self.Set=Set
@@ -105,7 +105,7 @@ class SegmentationTransform(nn.Module):
             img=self.jit(self.resize(input))
             mask_out=self.mask_resize(mask)
             img=self.affine(img)
-            mask_out=self.affine_mask(mask_out)
+            mask_out=self.affine_mask(mask_out,self.affine._params)
             # for rotation in self.rotations: img=rotation(img)
             img=self.normalize(img)
             # for i in range(len(self.rotations_mask)): mask_out=self.rotations_mask[i](mask_out,self.rotations[i]._params)
