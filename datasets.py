@@ -3,6 +3,7 @@ import os
 import pickle
 
 from PIL import Image
+import tqdm
 import numpy as np, pandas as pd
 from torch.utils.data import Dataset, DataLoader
 
@@ -28,7 +29,7 @@ class NPYDataset(Dataset):
         dataloader=DataLoader(self,batch_size=batch_size,shuffle=False)
         n_batches=len(self)//batch_size
         with torch.no_grad():
-            for i,X in enumerate(dataloader):
+            for i,X in tqdm.tqdm(enumerate(dataloader),total=n_batches):
                 if torch.cuda.is_available(): X=X.cuda()
                 if self.tensor_dataset: X = self.transform(X)
                 z=model(X).detach().cpu().numpy()
