@@ -121,36 +121,19 @@ def prepare_model(model_name,
         kwargs.update(net_extra_kwargs)
 
     if not semantic_segmentation:
-        net = get_model(model_name, **kwargs)
+        if kwargs['pretrained']:
+            kwargs['pretrained']=False
+            net = get_model(model_name, **kwargs)
+            net_shape_dict = {k:v.shape for k,v in net.state_dict().items()}
+            kwargs['num_classes']=1000
+            kwargs['pretrained']=True
+            net_pretrained=get_model(model_name, **kwargs).state_dict()
+            net.load_state_dict({k:v for k,v in net_pretrained.items() if v.shape==net_shape_dict[k]},strict=False)
+        else:
+            net = get_model(model_name, **kwargs)
+
     else:
         net = smp.Unet(model_name, classes=num_classes, in_channels=in_channels)
-
-    if pretrained_model_file_path:
-        assert (os.path.isfile(pretrained_model_file_path))
-        logging.info("Loading model: {}".format(pretrained_model_file_path))
-        checkpoint = torch.load(pretrained_model_file_path,
-                                map_location=(None if use_cuda and not remap_to_cpu else "cpu"))
-        if (type(checkpoint) == dict) and ("state_dict" in checkpoint):
-            checkpoint = checkpoint["state_dict"]
-
-        if load_ignore_extra:
-            pretrained_state = checkpoint
-            model_dict = net.state_dict()
-            pretrained_state = {k: v for k, v in pretrained_state.items() if k in model_dict}
-            net.load_state_dict(pretrained_state)
-        else:
-            if remove_module:
-                net_tmp = torch.nn.DataParallel(net)
-                net_tmp.load_state_dict(checkpoint)
-                net.load_state_dict(net_tmp.module.cpu().state_dict())
-            else:
-                net.load_state_dict(checkpoint)
-
-    if use_data_parallel and use_cuda:
-        net = torch.nn.DataParallel(net)
-
-        if use_cuda:
-            net = net.cuda()
 
     return net
 
