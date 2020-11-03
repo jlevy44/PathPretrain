@@ -155,10 +155,10 @@ def prepare_model(model_name,
     return net
 
 
-def generate_model(architecture, num_classes, semantic_segmentation):
+def generate_model(architecture, num_classes, semantic_segmentation, pretrained=False):
     #    from pytorchcv.pytorch.utils import prepare_model
     model = prepare_model(architecture,
-                          use_pretrained=False,
+                          use_pretrained=pretrained,
                           pretrained_model_file_path='',
                           use_cuda=False,
                           num_classes=num_classes,

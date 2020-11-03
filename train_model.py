@@ -150,7 +150,8 @@ def train_model(inputs_dir='inputs_training',
                 semantic_segmentation=False,
                 save_metric="loss",
                 custom_dataset=None,
-                save_predictions=True
+                save_predictions=True,
+                pretrained=False
                 ):
     assert save_metric in ['loss','f1']
     if extract_embeddings: assert predict, "Must be in prediction mode to extract embeddings"
@@ -183,7 +184,8 @@ def train_model(inputs_dir='inputs_training',
 
     model = generate_model(architecture,
                            num_classes,
-                           semantic_segmentation=semantic_segmentation)
+                           semantic_segmentation=semantic_segmentation,
+                           pretrained=pretrained)
 
     if torch.cuda.is_available():
         model = model.cuda()
