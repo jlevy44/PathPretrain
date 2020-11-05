@@ -9,7 +9,7 @@ from torch.utils.data import Dataset, DataLoader
 
 class NPYDataset(Dataset):
     def __init__(self, patch_info, npy_file, transform, tensor_dataset):
-        self.ID=os.path.basename(npy_file).split('.')[0]
+        self.ID=os.path.basename(npy_file).replace(".npy","")
         self.patch_info=patch_info.loc[patch_info["ID"]==self.ID].reset_index()
         self.X=np.load(npy_file)
         self.to_pil=lambda x: Image.fromarray(x)
