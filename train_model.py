@@ -11,7 +11,6 @@ import torch.nn as nn
 import pandas as pd
 from models import generate_model, ModelTrainer
 from PIL import Image
-from pathflowai.utils import load_sql_df
 import torch.nn as nn
 import kornia.augmentation as K, kornia.geometry.transform as G
 from datasets import NPYDataset, PickleDataset
@@ -162,22 +161,21 @@ def train_model(inputs_dir='inputs_training',
     if semantic_segmentation: transformers=generate_kornia_segmentation_transforms
     transformers = transformers(
         image_size=crop_size, resize=resize, mean=mean, std=std)
-    if not extract_embeddings:
-        if custom_dataset is not None:
-            assert predict
-            datasets={}
-            datasets['custom']=custom_dataset
-            predict_set='custom'
+    if custom_dataset is not None:
+        assert predict
+        datasets={}
+        datasets['custom']=custom_dataset
+        predict_set='custom'
+    else:
+        if tensor_dataset:
+            datasets = {x: torch.load(os.path.join(inputs_dir,f"{x}_data.pth")) for x in ['train','val']}
+            for k in datasets:
+                if len(datasets[k].tensors[1].shape)>1 and not semantic_segmentation: datasets[k]=TensorDataset(datasets[k].tensors[0],datasets[k].tensors[1].flatten())
+        elif pickle_dataset:
+            datasets = {x: PickleDataset(os.path.join(inputs_dir,f"{x}_data.pkl"),transformers[x],label_map) for x in ['train','val']}
         else:
-            if tensor_dataset:
-                datasets = {x: torch.load(os.path.join(inputs_dir,f"{x}_data.pth")) for x in ['train','val']}
-                for k in datasets:
-                    if len(datasets[k].tensors[1].shape)>1 and not semantic_segmentation: datasets[k]=TensorDataset(datasets[k].tensors[0],datasets[k].tensors[1].flatten())
-            elif pickle_dataset:
-                datasets = {x: PickleDataset(os.path.join(inputs_dir,f"{x}_data.pkl"),transformers[x],label_map) for x in ['train','val']}
-            else:
-                datasets = {x: Datasets.ImageFolder(os.path.join(
-                    inputs_dir, x), transformers[x]) for x in ['train', 'val', 'test']}
+            datasets = {x: Datasets.ImageFolder(os.path.join(
+                inputs_dir, x), transformers[x]) for x in ['train', 'val', 'test']}
 
         dataloaders = {x: DataLoader(
             datasets[x], batch_size=batch_size, shuffle=(x == 'train')) for x in datasets}
@@ -228,11 +226,16 @@ def train_model(inputs_dir='inputs_training',
 
         if os.path.exists(model_save_loc): trainer.model.load_state_dict(torch.load(model_save_loc,map_location=f"cuda:{gpu_id}" if gpu_id>=0 else "cpu"))
 
-        if extract_embeddings and extract_embeddings_df:
+        if extract_embeddings:
             assert not semantic_segmentation, "Semantic Segmentation not implemented for whole slide segmentation"
             trainer.model=nn.Sequential(trainer.model.features,Reshape())
-            patch_info=load_sql_df(extract_embeddings_df,resize)
-            dataset=NPYDataset(patch_info,extract_embeddings,transformers["test"],tensor_dataset)
+            if predict_set=='custom':
+                assert 'embed' in dir(dataset), "Embedding method required for dataset with model input, batch size and embedding output directory as arguments."
+            else:
+                from pathflowai.utils import load_sql_df
+                assert len(extract_embeddings_df)>0 and os.path.exists(extract_embeddings_df), "Must load data from SQL database if not using custom dataset"
+                patch_info=load_sql_df(extract_embeddings_df,resize)
+                dataset=NPYDataset(patch_info,extract_embeddings,transformers["test"],tensor_dataset)
             dataset.embed(trainer.model,batch_size,embedding_out_dir)
             exit()
 
