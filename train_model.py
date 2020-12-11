@@ -230,6 +230,7 @@ def train_model(inputs_dir='inputs_training',
             assert not semantic_segmentation, "Semantic Segmentation not implemented for whole slide segmentation"
             trainer.model=nn.Sequential(trainer.model.features,Reshape())
             if predict_set=='custom':
+                dataset=datasets['custom']
                 assert 'embed' in dir(dataset), "Embedding method required for dataset with model input, batch size and embedding output directory as arguments."
             else:
                 from pathflowai.utils import load_sql_df
