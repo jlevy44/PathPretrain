@@ -250,6 +250,8 @@ def train_model(inputs_dir='inputs_training',
 
         return Y
 
+def main():
+    fire.Fire(train_model)
 
 if __name__ == '__main__':
-    fire.Fire(train_model)
+    main()
