@@ -2,7 +2,7 @@ import time
 import os
 import sys
 import seaborn as sns
-from schedulers import Scheduler
+from .schedulers import Scheduler
 import torch
 from torch import nn
 from torchvision import models

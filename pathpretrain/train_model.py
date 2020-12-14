@@ -9,11 +9,11 @@ import torch
 from torch.utils.data import TensorDataset
 import torch.nn as nn
 import pandas as pd
-from models import generate_model, ModelTrainer
+from .models import generate_model, ModelTrainer
 from PIL import Image
 import torch.nn as nn
 import kornia.augmentation as K, kornia.geometry.transform as G
-from datasets import NPYDataset, PickleDataset
+from .datasets import NPYDataset, PickleDataset
 
 class Reshape(nn.Module):
     def __init__(self):
