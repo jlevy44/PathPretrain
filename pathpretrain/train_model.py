@@ -238,17 +238,17 @@ def train_model(inputs_dir='inputs_training',
                 patch_info=load_sql_df(extract_embeddings_df,resize)
                 dataset=NPYDataset(patch_info,extract_embeddings,transformers["test"],tensor_dataset)
             dataset.embed(trainer.model,batch_size,embedding_out_dir)
-            exit()
+            return "Output Embeddings"
+        else:
+            Y = dict()
 
-        Y = dict()
+            Y['pred'],Y['true'] = trainer.predict(dataloaders[predict_set])
 
-        Y['pred'],Y['true'] = trainer.predict(dataloaders[predict_set])
+            # Y['true'] = datasets[predict_set].targets
 
-        # Y['true'] = datasets[predict_set].targets
+            if save_predictions: torch.save(Y, predictions_save_path)
 
-        if save_predictions: torch.save(Y, predictions_save_path)
-
-        return Y
+            return Y
 
 def main():
     fire.Fire(train_model)
