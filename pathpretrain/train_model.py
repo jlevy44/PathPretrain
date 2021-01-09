@@ -134,6 +134,7 @@ def train_model(inputs_dir='inputs_training',
                 batch_size=32,
                 predict=False,
                 model_save_loc='saved_model.pkl',
+                pretrained_save_loc='pretrained_model.pkl',
                 predictions_save_path='predictions.pkl',
                 predict_set='test',
                 verbose=False,
@@ -212,7 +213,7 @@ def train_model(inputs_dir='inputs_training',
                            save_metric=save_metric,
                            save_after_n_batch=save_after_n_batch)
 
-    if os.path.exists(model_save_loc): trainer.model.load_state_dict(torch.load(model_save_loc,map_location=f"cuda:{gpu_id}" if gpu_id>=0 else "cpu"))
+    if os.path.exists(pretrained_save_loc): trainer.model.load_state_dict(torch.load(pretrained_save_loc,map_location=f"cuda:{gpu_id}" if gpu_id>=0 else "cpu"))
 
     if not predict:
 
@@ -227,6 +228,8 @@ def train_model(inputs_dir='inputs_training',
 
     else:
         # assert not tensor_dataset, "Only ImageFolder and NPYDatasets allowed"
+
+        if os.path.exists(model_save_loc): trainer.model.load_state_dict(torch.load(model_save_loc,map_location=f"cuda:{gpu_id}" if gpu_id>=0 else "cpu"))
 
         if extract_embeddings:
             assert not semantic_segmentation, "Semantic Segmentation not implemented for whole slide segmentation"
