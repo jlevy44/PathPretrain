@@ -172,7 +172,7 @@ class ModelTrainer:
             Number of training batches for epoch.
     """
 
-    def __init__(self, model, n_epoch=300, validation_dataloader=None, optimizer_opts=dict(name='adam', lr=1e-3, weight_decay=1e-4), scheduler_opts=dict(scheduler='warm_restarts', lr_scheduler_decay=0.5, T_max=10, eta_min=5e-8, T_mult=2), loss_fn='ce', reduction='mean', num_train_batches=None, opt_level='O1', checkpoints_dir='checkpoints',tensor_dataset=False,transforms=None,semantic_segmentation=False,save_metric='loss'):
+    def __init__(self, model, n_epoch=300, validation_dataloader=None, optimizer_opts=dict(name='adam', lr=1e-3, weight_decay=1e-4), scheduler_opts=dict(scheduler='warm_restarts', lr_scheduler_decay=0.5, T_max=10, eta_min=5e-8, T_mult=2), loss_fn='ce', reduction='mean', num_train_batches=None, opt_level='O1', checkpoints_dir='checkpoints',tensor_dataset=False,transforms=None,semantic_segmentation=False,save_metric='loss',save_after_n_batch=0):
 
         self.model = model
         # self.amp_handle = amp.init(enabled=True)
@@ -206,10 +206,13 @@ class ModelTrainer:
         self.transforms=transforms
         self.semantic_segmentation=semantic_segmentation
         self.save_metric=save_metric
+        self.save_after_n_batch=save_after_n_batch
+        self.train_batch_count=0
 
-    def save_checkpoint(self,model,epoch):
+    def save_checkpoint(self,model,epoch,batch=0):
         os.makedirs(self.checkpoints_dir,exist_ok=True)
-        torch.save(model,os.path.join(self.checkpoints_dir,f"{epoch}.checkpoint.pth"))
+        out_name = f"{batch}.batch" if batch else f"{epoch}.epoch"
+        torch.save(model,os.path.join(self.checkpoints_dir,f"{out_name}.checkpoint.pth"))
 
     def calc_loss(self, y_pred, y_true):
         """Calculates loss supplied in init statement and modified by reweighting.
@@ -342,6 +345,7 @@ class ModelTrainer:
             train_dataloader.dataset) // train_dataloader.batch_size if self.num_train_batches == None else self.num_train_batches
         for i, (X, y_true) in enumerate(train_dataloader):
             starttime = time.time()
+
             if i == n_batch:
                 break
             # X = Variable(batch[0], requires_grad=True)
@@ -369,6 +373,14 @@ class ModelTrainer:
             if self.verbosity >=1:
                 print("Epoch {}[{}/{}] Time:{}, Train Loss:{}".format(epoch,
                                                                   i, n_batch, round(endtime - starttime, 3), train_loss))
+            self.train_batch_count+=1
+            if self.save_after_n_batch and self.train_batch_count%self.save_after_n_batch==0:
+                val_loss,val_f1=self.val_loop(epoch, self.val_dataloader)
+                self.batch_val_losses.append(val_loss)
+                self.batch_val_f1.append(val_f1)
+                self.save_best_val_model(val_loss, val_f1, self.batch_val_losses, self.batch_val_f1, epoch, True, self.train_batch_count)
+                self.model.train(True)
+
         self.scheduler.step()
         running_loss /= n_batch
         return running_loss
@@ -428,7 +440,6 @@ class ModelTrainer:
         # if print_val_confusion and save_predictions:
         y_pred, y_true = np.hstack(Y['pred']), np.hstack(Y['true'])
         print(classification_report(y_true, y_pred))
-
         running_loss /= n_batch
         return running_loss, f1_score(y_true, y_pred,average='macro')
 
@@ -503,6 +514,8 @@ class ModelTrainer:
         self.train_losses = []
         self.val_losses = []
         self.val_f1 = []
+        self.batch_val_losses = []
+        self.batch_val_f1 = []
         if verbose:
             self.verbosity+=1
         for epoch in range(self.n_epoch):
@@ -516,21 +529,27 @@ class ModelTrainer:
             val_time = time.time() - current_time
             self.val_losses.append(val_loss)
             self.val_f1.append(val_f1)
+            self.batch_val_losses.append(val_loss)
+            self.batch_val_f1.append(val_f1)
             if True:#verbose and not (epoch % print_every):
                 if plot_training_curves:
                     self.plot_train_val_curves(plot_save_file)
                 print("Epoch {}: Train Loss {}, Val Loss {}, Train Time {}, Val Time {}".format(
                     epoch, train_loss, val_loss, train_time, val_time))
-            if (val_loss <= min(self.val_losses) if self.save_metric=='loss' else val_f1 >= max(self.val_f1)) and save_model:
-                print("New best model at epoch {}".format(epoch))
-                min_val_loss_f1 = val_loss if self.save_metric=='loss' else val_f1
-                best_epoch = epoch
-                best_model_state_dict = copy.deepcopy(self.model.state_dict())
-                self.save_checkpoint(best_model_state_dict,epoch)
+            self.save_best_val_model(val_loss, val_f1, self.val_losses, self.val_f1, epoch, save_model)
         if save_model:
             print("Saving best model at epoch {}".format(best_epoch))
-            self.model.load_state_dict(best_model_state_dict)
-        return self, min_val_loss_f1, best_epoch
+            self.model.load_state_dict(self.best_model_state_dict)
+        return self, self.min_val_loss_f1, self.best_epoch
+
+    def save_best_val_model(self, val_loss, val_f1, val_loss_list, val_f1_list, epoch, save_model=True, batch=0):
+        if (val_loss <= min(val_loss_list) if self.save_metric=='loss' else val_f1 >= max(val_f1_list)) and save_model:
+            print("New best model at epoch {}".format(epoch))
+            self.min_val_loss_f1 = val_loss if self.save_metric=='loss' else val_f1
+            self.best_epoch = epoch
+            if batch: self.best_batch = batch
+            self.best_model_state_dict = copy.deepcopy(self.model.state_dict())
+            self.save_checkpoint(self.best_model_state_dict,epoch,batch)
 
     def plot_train_val_curves(self, save_file=None):
         """Plots training and validation curves.

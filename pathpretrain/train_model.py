@@ -150,7 +150,8 @@ def train_model(inputs_dir='inputs_training',
                 save_metric="loss",
                 custom_dataset=None,
                 save_predictions=True,
-                pretrained=False
+                pretrained=False,
+                save_after_n_batch=0
                 ):
     assert save_metric in ['loss','f1']
     if extract_embeddings: assert predict, "Must be in prediction mode to extract embeddings"
@@ -208,7 +209,8 @@ def train_model(inputs_dir='inputs_training',
                            tensor_dataset=tensor_dataset,
                            transforms=transformers,
                            semantic_segmentation=semantic_segmentation,
-                           save_metric=save_metric)
+                           save_metric=save_metric,
+                           save_after_n_batch=save_after_n_batch)
 
     if not predict:
 
