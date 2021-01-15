@@ -180,7 +180,7 @@ def train_model(inputs_dir='inputs_training',
                 inputs_dir, x), transformers[x]) for x in ['train', 'val', 'test']}
 
     dataloaders = {x: DataLoader(
-        datasets[x], batch_size=batch_size, shuffle=(x == 'train')) for x in datasets}
+        datasets[x], batch_size=batch_size, shuffle=(x == 'train' and not predict)) for x in datasets}
 
     model = generate_model(architecture,
                            num_classes,
