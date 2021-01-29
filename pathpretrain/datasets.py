@@ -1,7 +1,7 @@
 import torch
 import os
 import pickle
-
+import tifffile
 from PIL import Image
 import tqdm
 import numpy as np, pandas as pd
@@ -9,9 +9,11 @@ from torch.utils.data import Dataset, DataLoader
 
 class NPYDataset(Dataset):
     def __init__(self, patch_info, npy_file, transform, tensor_dataset):
-        self.ID=os.path.basename(npy_file).replace(".npy","")
+        self.ID=os.path.basename(npy_file).replace(".npy","").replace(".tif","").replace(".svs","")
         self.patch_info=patch_info.loc[patch_info["ID"]==self.ID].reset_index()
-        self.X=np.load(npy_file)
+        if npy_file.endswith(".npy"): self.X=np.load(npy_file)
+        elif npy_file.endswith(".tif") or npy_file.endswith(".svs"): self.X=tifffile.imread(npy_file)
+        else: raise NotImplementedError
         self.to_pil=lambda x: Image.fromarray(x)
         self.transform=transform
         self.tensor_dataset=tensor_dataset
