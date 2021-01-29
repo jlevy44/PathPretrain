@@ -244,7 +244,7 @@ def train_model(inputs_dir='inputs_training',
                     patch_info=load_sql_df(extract_embeddings_df,resize)
                 elif extract_embeddings_df.endswith(".pkl"):
                     patch_info=pd.read_pickle(extract_embeddings_df)
-                    assert patch_info['patch_size'].mode()==resize, "Patch size pickle does not match."
+                    assert patch_info['patch_size'].iloc[0]==resize, "Patch size pickle does not match."
                 else:
                     raise NotImplementedError
                 dataset=NPYDataset(patch_info,extract_embeddings,transformers["test"],tensor_dataset)
