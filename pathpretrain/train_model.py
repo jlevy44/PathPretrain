@@ -238,9 +238,15 @@ def train_model(inputs_dir='inputs_training',
                 dataset=datasets['custom']
                 assert 'embed' in dir(dataset), "Embedding method required for dataset with model input, batch size and embedding output directory as arguments."
             else:
-                from pathflowai.utils import load_sql_df
-                assert len(extract_embeddings_df)>0 and os.path.exists(extract_embeddings_df), "Must load data from SQL database if not using custom dataset"
-                patch_info=load_sql_df(extract_embeddings_df,resize)
+                assert len(extract_embeddings_df)>0 and os.path.exists(extract_embeddings_df), "Must load data from SQL database or pickle if not using custom dataset"
+                if extract_embeddings_df.endswith(".db"):
+                    from pathflowai.utils import load_sql_df
+                    patch_info=load_sql_df(extract_embeddings_df,resize)
+                elif extract_embeddings_df.endswith(".pkl"):
+                    patch_info=pd.read_pickle(extract_embeddings_df)
+                    assert patch_info['patch_size'].mode()==resize, "Patch size pickle does not match."
+                else:
+                    raise NotImplementedError
                 dataset=NPYDataset(patch_info,extract_embeddings,transformers["test"],tensor_dataset)
             dataset.embed(trainer.model,batch_size,embedding_out_dir)
             return "Output Embeddings"
