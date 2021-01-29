@@ -142,7 +142,7 @@ def train_model(inputs_dir='inputs_training',
                 extract_embeddings="",
                 extract_embeddings_df="",
                 embedding_out_dir="./",
-                gpu_id=0,
+                gpu_id=-1,
                 checkpoints_dir="checkpoints",
                 tensor_dataset=False,
                 pickle_dataset=False,
@@ -158,7 +158,7 @@ def train_model(inputs_dir='inputs_training',
     if extract_embeddings: assert predict, "Must be in prediction mode to extract embeddings"
     if tensor_dataset: assert not pickle_dataset, "Cannot have pickle and tensor classes activated"
     if semantic_segmentation and custom_dataset is None: assert tensor_dataset==True, "For now, can only perform semantic segmentation with TensorDataset"
-    torch.cuda.set_device(gpu_id)
+    if gpu_id>=0: torch.cuda.set_device(gpu_id)
     transformers=generate_transformers if not tensor_dataset else generate_kornia_transforms
     if semantic_segmentation: transformers=generate_kornia_segmentation_transforms
     transformers = transformers(
