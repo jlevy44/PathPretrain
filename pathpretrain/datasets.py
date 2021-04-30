@@ -46,7 +46,7 @@ class PickleDataset(Dataset):
     def __init__(self, pkl, transform, label_map):
         self.data=pickle.load(open(pkl,'rb'))
         self.X,self.targets=self.data['X'],self.data['y']
-        self.aux_data=self.data.get("Z",None)
+        self.aux_data=self.data.get("z",None)
         self.has_aux=(self.aux_data is not None)
         if self.has_aux and isinstance(self.aux_data,pd.DataFrame): self.aux_data=self.aux_data.values
         if self.has_aux: self.n_aux_features=self.aux_data.shape[1]
