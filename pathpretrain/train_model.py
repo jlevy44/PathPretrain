@@ -185,7 +185,8 @@ def train_model(inputs_dir='inputs_training',
     model = generate_model(architecture,
                            num_classes,
                            semantic_segmentation=semantic_segmentation,
-                           pretrained=pretrained)
+                           pretrained=pretrained,
+                           n_aux_features=None if "n_aux_features" not in dir(datasets['train']) else datasets['train'].n_aux_features)
 
     if torch.cuda.is_available():
         model = model.cuda()

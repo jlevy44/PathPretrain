@@ -5,6 +5,7 @@ import seaborn as sns
 from .schedulers import Scheduler
 import torch
 from torch import nn
+from torch.nn import functional as F
 from torchvision import models
 from torchvision.models.mobilenet import MobileNetV2
 from sklearn.metrics import classification_report, f1_score
@@ -65,6 +66,26 @@ class MLP(nn.Module):
     def forward(self, x):
         return self.mlp(x)
 
+class AuxNet(nn.Module):
+    def __init__(self,net,n_aux_features):
+        self.net=net
+        self.features=self.net.features
+        self.output=self.net.output
+        self.n_features=self.net.output.in_features
+        self.n_aux_features=n_aux_features
+        self.transform_nn=nn.Sequantial(nn.Linear(self.n_aux_features,self.n_features),nn.LeakyReLU())
+        self.gate_nn=MLP(self.n_features,[32],dropout_p=0.2,binary=False)#nn.Linear(self.n_features,1)
+
+    def forward(self,x,z=None):
+        x=self.features(x)
+        x = x.view(x.size(0), -1)
+        if z is not None:
+            z=self.transform_nn(z)
+            gate_h=F.softmax(torch.cat([self.gate_nn(xz) for xz in [x,z]],1),1)
+            x = gate_h[:,0].unsqueeze(1) * x + gate_h[:,1].unsqueeze(1) * z
+        x = self.output(x)
+        return x
+
 def prepare_model(model_name,
                   use_pretrained,
                   pretrained_model_file_path,
@@ -76,7 +97,8 @@ def prepare_model(model_name,
                   in_channels=3,
                   remap_to_cpu=True,
                   remove_module=False,
-                  semantic_segmentation=False):
+                  semantic_segmentation=False,
+                  n_aux_features=None):
     from pytorchcv.model_provider import get_model
     import segmentation_models_pytorch as smp
     """ https://raw.githubusercontent.com/osmr/imgclsmob/master/pytorch/utils.py
@@ -132,20 +154,24 @@ def prepare_model(model_name,
         else:
             net = get_model(model_name, **kwargs)
 
+        if n_aux_features is not None:
+            net=AuxNet(net,n_aux_features)
+
     else:
         net = smp.Unet(model_name, classes=num_classes, in_channels=in_channels)
 
     return net
 
 
-def generate_model(architecture, num_classes, semantic_segmentation, pretrained=False):
+def generate_model(architecture, num_classes, semantic_segmentation, pretrained=False, n_aux_features=None):
     #    from pytorchcv.pytorch.utils import prepare_model
     model = prepare_model(architecture,
                           use_pretrained=pretrained,
                           pretrained_model_file_path='',
                           use_cuda=False,
                           num_classes=num_classes,
-                          semantic_segmentation=semantic_segmentation)
+                          semantic_segmentation=semantic_segmentation,
+                          n_aux_features=n_aux_features)
     return model
 
 
@@ -343,23 +369,28 @@ class ModelTrainer:
         running_loss = 0.
         n_batch = len(
             train_dataloader.dataset) // train_dataloader.batch_size if self.num_train_batches == None else self.num_train_batches
-        for i, (X, y_true) in enumerate(train_dataloader):
+        for i, batch in enumerate(train_dataloader):
             starttime = time.time()
+            X, y_true = batch[:2]
+            if len(batch)==3: Z=batch[3]
+            else: Z=None
 
             if i == n_batch:
                 break
+
             # X = Variable(batch[0], requires_grad=True)
             # y_true = Variable(batch[1])
 
             if torch.cuda.is_available():
                 X = X.cuda()
                 y_true = y_true.cuda()
+                if Z is not None: Z=Z.cuda()
 
             if self.tensor_dataset:
                 if self.semantic_segmentation: X,y_true=self.transforms['train'](X,y_true)
                 else: X=self.transforms['train'](X)
 
-            y_pred = self.model(X)
+            y_pred = self.model(X) if Z is None else self.model(X,Z)
             # y_true=y_true.argmax(dim=1)
 
             loss = self.calc_loss(y_pred, y_true)  # .view(-1,1)
@@ -409,19 +440,22 @@ class ModelTrainer:
         running_loss = 0.
         Y = {'pred': [], 'true': []}
         with torch.no_grad():
-            for i, (X, y_true) in enumerate(val_dataloader):
+            for i, batch in enumerate(val_dataloader):
                 # X = Variable(batch[0], requires_grad=True)
                 # y_true = Variable(batch[1])
-
+                X, y_true = batch[:2]
+                if len(batch)==3: Z=batch[3]
+                else: Z=None
                 if torch.cuda.is_available():
                     X = X.cuda()
                     y_true = y_true.cuda()
+                    if Z is not None: Z=Z.cuda()
 
                 if self.tensor_dataset:
                     if self.semantic_segmentation: X,y_true=self.transforms['val'](X,y_true)
                     else: X=self.transforms['val'](X)
 
-                y_pred = self.model(X)
+                y_pred = self.model(X) if Z is None else self.model(X,Z)
                 # y_true=y_true.argmax(dim=1)
                 # if save_predictions:
                 Y['true'].append(
@@ -465,13 +499,17 @@ class ModelTrainer:
         n_batch = len(
             test_dataloader.dataset) // test_dataloader.batch_size
         with torch.no_grad():
-            for i, (X, y_true) in tqdm.tqdm(enumerate(test_dataloader),total=n_batch):
+            for i, batch in tqdm.tqdm(enumerate(test_dataloader),total=n_batch):
                 #X = Variable(batch[0],requires_grad=False)
+                X, y_true = batch[:2]
+                if len(batch)==3: Z=batch[3]
+                else: Z=None
                 if torch.cuda.is_available():
                     X = X.cuda()
                     y_true = y_true.cuda()
+                    if Z is not None: Z=Z.cuda()
 
-                prediction = self.model(X)
+                prediction = self.model(X) if Z is None else self.model(X,Z)
                 y_pred.append(prediction.detach().cpu().numpy())
                 Y_true.append(y_true.detach().cpu().numpy())
         y_pred = np.concatenate(y_pred, axis=0)  # torch.cat(y_pred,0)

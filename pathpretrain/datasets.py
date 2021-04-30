@@ -46,6 +46,10 @@ class PickleDataset(Dataset):
     def __init__(self, pkl, transform, label_map):
         self.data=pickle.load(open(pkl,'rb'))
         self.X,self.targets=self.data['X'],self.data['y']
+        self.aux_data=self.data.get("z",None)
+        self.has_aux=(self.aux_data is not None)
+        if self.has_aux and isinstance(self.aux_data,pd.DataFrame): self.aux_data=self.aux_data.values
+        if self.has_aux: self.n_aux_features=self.aux_data.shape[1]
         self.transform=transform
         self.to_pil=lambda x: Image.fromarray(x)
         self.label_map=label_map
@@ -59,7 +63,9 @@ class PickleDataset(Dataset):
 
 
     def __getitem__(self,idx):
-        return self.transform(self.to_pil(self.X[idx])), torch.tensor(self.targets[idx]).long()
+        items=(self.transform(self.to_pil(self.X[idx])), torch.tensor(self.targets[idx]).long())
+        if self.has_aux: items+=(torch.tensor([self.aux_data[i]]),)
+        return items
 
     def __len__(self):
         return self.length
