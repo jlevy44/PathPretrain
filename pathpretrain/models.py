@@ -82,7 +82,7 @@ class AuxNet(nn.Module):
         x = x.view(x.size(0), -1)
         if z is not None:
             z=self.transform_nn(z)
-            print(x.shape,z.shape,self.gate_nn(x).shape,self.gate_nn(z).shape)
+            #print(x.shape,z.shape,self.gate_nn(x).shape,self.gate_nn(z).shape)
             gate_h=F.softmax(torch.cat([self.gate_nn(xz) for xz in [x,z]],1),1)
             x = gate_h[:,0].unsqueeze(1) * x + gate_h[:,1].unsqueeze(1) * z
         x = self.output(x)
