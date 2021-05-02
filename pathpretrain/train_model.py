@@ -188,6 +188,8 @@ def train_model(inputs_dir='inputs_training',
                            pretrained=pretrained,
                            n_aux_features=None if "n_aux_features" not in dir(datasets['train']) else datasets['train'].n_aux_features)
 
+    if verbose: print(model)
+
     if torch.cuda.is_available():
         model = model.cuda()
 
