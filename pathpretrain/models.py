@@ -373,7 +373,7 @@ class ModelTrainer:
         for i, batch in enumerate(train_dataloader):
             starttime = time.time()
             X, y_true = batch[:2]
-            if len(batch)==3: Z=batch[3]
+            if len(batch)==3: Z=batch[2]
             else: Z=None
 
             if i == n_batch:
@@ -445,7 +445,7 @@ class ModelTrainer:
                 # X = Variable(batch[0], requires_grad=True)
                 # y_true = Variable(batch[1])
                 X, y_true = batch[:2]
-                if len(batch)==3: Z=batch[3]
+                if len(batch)==3: Z=batch[2]
                 else: Z=None
                 if torch.cuda.is_available():
                     X = X.cuda()
@@ -503,7 +503,7 @@ class ModelTrainer:
             for i, batch in tqdm.tqdm(enumerate(test_dataloader),total=n_batch):
                 #X = Variable(batch[0],requires_grad=False)
                 X, y_true = batch[:2]
-                if len(batch)==3: Z=batch[3]
+                if len(batch)==3: Z=batch[2]
                 else: Z=None
                 if torch.cuda.is_available():
                     X = X.cuda()
