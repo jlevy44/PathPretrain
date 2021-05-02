@@ -74,7 +74,7 @@ class AuxNet(nn.Module):
         self.output=self.net.output
         self.n_features=self.net.output.in_features
         self.n_aux_features=n_aux_features
-        self.transform_nn=nn.Sequantial(nn.Linear(self.n_aux_features,self.n_features),nn.LeakyReLU())
+        self.transform_nn=nn.Sequential(nn.Linear(self.n_aux_features,self.n_features),nn.LeakyReLU())
         self.gate_nn=MLP(self.n_features,[32],dropout_p=0.2,binary=False)#nn.Linear(self.n_features,1)
 
     def forward(self,x,z=None):
