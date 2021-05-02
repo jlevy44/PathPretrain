@@ -59,6 +59,7 @@ class PickleDataset(Dataset):
                 remove_bool=(self.targets!=-1)
                 self.targets=self.targets[remove_bool]
                 self.X=pd.Series(self.X).iloc[remove_bool].tolist()
+                if self.has_aux: self.aux_data=self.aux_data[remove_bool]
         self.length=len(self.X)
 
 
