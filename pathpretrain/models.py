@@ -236,6 +236,8 @@ class ModelTrainer:
         self.save_metric=save_metric
         self.save_after_n_batch=save_after_n_batch
         self.train_batch_count=0
+        self.initial_seed=0
+        self.seed=0
 
     def save_checkpoint(self,model,epoch,batch=0):
         os.makedirs(self.checkpoints_dir,exist_ok=True)
@@ -559,6 +561,8 @@ class ModelTrainer:
         if verbose:
             self.verbosity+=1
         for epoch in range(self.n_epoch):
+            self.seed=self.initial_seed+epoch
+            np.random.seed(self.seed)
             start_time = time.time()
             train_loss = self.train_loop(epoch, train_dataloader)
             current_time = time.time()

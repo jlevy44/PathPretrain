@@ -22,6 +22,9 @@ class Reshape(nn.Module):
     def forward(self,x):
         return x.view(x.shape[0],-1)
 
+def worker_init_fn(worker_id):
+    np.random.seed(np.random.get_state()[1][0] + worker_id)
+
 def generate_transformers(image_size=224, resize=256, mean=[], std=[], include_jitter=False):
     train_transform = [transforms.Resize((resize,resize))]
     if include_jitter:
@@ -180,7 +183,7 @@ def train_model(inputs_dir='inputs_training',
                 inputs_dir, x), transformers[x]) for x in ['train', 'val', 'test']}
 
     dataloaders = {x: DataLoader(
-        datasets[x], batch_size=batch_size, shuffle=(x == 'train' and not predict)) for x in datasets}
+        datasets[x], batch_size=batch_size, shuffle=(x == 'train' and not predict), worker_init_fn=worker_init_fn) for x in datasets}
 
     model = generate_model(architecture,
                            num_classes,
