@@ -582,7 +582,7 @@ class ModelTrainer:
                     epoch, train_loss, val_loss, train_time, val_time))
             self.save_best_val_model(val_loss, val_f1, self.val_losses, self.val_f1, epoch, save_model)
         if save_model:
-            print("Saving best model at epoch {}".format(best_epoch))
+            print("Saving best model at epoch {}".format(self.best_epoch))
             self.model.load_state_dict(self.best_model_state_dict)
         return self, self.min_val_loss_f1, self.best_epoch
 
