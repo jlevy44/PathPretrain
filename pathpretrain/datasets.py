@@ -45,7 +45,6 @@ class NPYDataset(Dataset):
 class PickleDataset(Dataset):
     def __init__(self, pkl, transform, label_map):
         self.data=pickle.load(open(pkl,'rb'))
-        print(self.data.keys())
         self.X,self.targets=self.data['X'],self.data['y']
         self.aux_data=self.data.get("z",None)
         self.has_aux=(self.aux_data is not None)

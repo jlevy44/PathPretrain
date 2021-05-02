@@ -68,6 +68,7 @@ class MLP(nn.Module):
 
 class AuxNet(nn.Module):
     def __init__(self,net,n_aux_features):
+        super().__init__()
         self.net=net
         self.features=self.net.features
         self.output=self.net.output
