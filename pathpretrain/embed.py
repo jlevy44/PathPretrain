@@ -2,10 +2,11 @@ import fire, os, torch, tqdm, pandas as pd, numpy as np
 from torch.utils.data import Dataset, DataLoader
 from PIL import Image
 from .train_model import train_model, generate_transformers, generate_kornia_transforms
+from .utils import load_image
 
 class CustomDataset(Dataset):
-    def __init__(self, patch_info, npy_file, transform):
-        self.X=np.load(npy_file)
+    def __init__(self, patch_info, npy_file, transform, image_stack=False):
+        self.X=load_image(npy_file)
         self.patch_info=pd.read_pickle(patch_info)
         self.xy=self.patch_info[['x','y']].values
         self.patch_size=self.patch_info['patch_size'].iloc[0]
@@ -16,7 +17,8 @@ class CustomDataset(Dataset):
 
     def __getitem__(self,i):
         x,y=self.xy[i]
-        return self.transform(self.to_pil(self.X[i]))
+        X=self.X[i] if image_stack else self.X[x:(x+patch_size),y:(y+patch_size)]
+        return self.transform(self.to_pil(X))
 
     def __len__(self):
         return self.length
@@ -42,7 +44,8 @@ def generate_embeddings(patch_info_file="",
                         crop_size=224,
                         resize=256,
                         mean=[0.5, 0.5, 0.5],
-                        std=[0.1, 0.1, 0.1]):
+                        std=[0.1, 0.1, 0.1],
+                        image_stack=False):
 
     os.makedirs("cnn_embeddings",exist_ok=True)
     train_model(model_save_loc=model_save_loc,
@@ -55,7 +58,8 @@ def generate_embeddings(patch_info_file="",
                                              generate_transformers(crop_size=crop_size,
                                                                     resize=resize,
                                                                     mean=mean,
-                                                                    std=std)['test']
+                                                                    std=std)['test'],
+                                             image_stack
                                              ),
                 gpu_id=gpu_id)
 
