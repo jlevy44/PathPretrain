@@ -167,7 +167,10 @@ def prepare_model(model_name,
 
 def generate_model(architecture, num_classes, semantic_segmentation, pretrained=False, n_aux_features=None):
     #    from pytorchcv.pytorch.utils import prepare_model
-    model = prepare_model(architecture,
+    if os.path.exists(architecture):
+        model = torch.load(architecture,map_location='cpu')
+    else:
+        model = prepare_model(architecture,
                           use_pretrained=pretrained,
                           pretrained_model_file_path='',
                           use_cuda=False,

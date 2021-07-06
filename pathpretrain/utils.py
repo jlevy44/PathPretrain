@@ -1,7 +1,7 @@
 import tqdm,cv2
 import pandas as pd, networkx as nx, numpy as np
 from sklearn.metrics.pairwise import euclidean_distances
-
+import openslide, tifffile
 
 def deduplicate_images(image_list):
     image_list=pd.Series(image_list) # if X is a pandas series containing images for individual elements
@@ -21,3 +21,16 @@ def deduplicate_images(image_list):
     for comp in nx.connected_components(G):
         remove.extend(list(comp)[1:])
     return image_list.drop(remove).tolist()
+
+def load_image(image_file, check_size=False):
+    img_ext=os.path.splitext(image_file)
+    if img_ext[-1]=="npy":
+        image=np.load(image_file)
+    elif img_ext[-1] in ["svs","tif","tiff","png"]:
+        slide=openslide.open_slide(image_file)
+        image=tifffile.imread(image_file)
+        if check_size and (not (int(slide.properties.get('aperio.AppMag',40))==20 or int(slide.properties.get('openslide.objective-power',40))==20)):
+            image = cv2.resize(image,None,fx=1/2,fy=1/2,interpolation=cv2.INTER_CUBIC)
+    else:
+        raise NotImplementedError
+    return image

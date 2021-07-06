@@ -2,7 +2,7 @@ from setuptools import setup
 from setuptools.command.install import install
 import subprocess
 import os
-PACKAGES=[ 
+PACKAGES=[
             ]
 
 with open('README.md','r', encoding='utf-8') as f:
@@ -17,7 +17,11 @@ setup(name='pathpretrain',
       license='MIT',
       scripts=[],
       entry_points={
-            'console_scripts':['pathpretrain=pathpretrain.train_model:main']
+            'console_scripts':['pathpretrain-train=pathpretrain.train_model:main',
+                               'pathpretrain-predict=pathpretrain.predict:main',
+                               'pathpretrain-embed=pathpretrain.embed:main',
+                               'pathpretrain-preprocess=pathpretrain.preprocess:main'
+                               ]
       },
       long_description=long_description,
       long_description_content_type='text/markdown',
