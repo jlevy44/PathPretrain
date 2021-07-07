@@ -24,9 +24,9 @@ def deduplicate_images(image_list):
 
 def load_image(image_file, check_size=False):
     img_ext=os.path.splitext(image_file)
-    if img_ext[-1]=="npy":
+    if img_ext[-1]==".npy":
         image=np.load(image_file)
-    elif img_ext[-1] in ["svs","tif","tiff","png"]:
+    elif img_ext[-1] in [".svs",".tif",".tiff",".png"]:
         slide=openslide.open_slide(image_file)
         image=tifffile.imread(image_file)
         if check_size and (not (int(slide.properties.get('aperio.AppMag',40))==20 or int(slide.properties.get('openslide.objective-power',40))==20)):

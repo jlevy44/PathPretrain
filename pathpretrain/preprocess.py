@@ -5,6 +5,7 @@ import histomicstk as htk
 from dask.diagnostics import ProgressBar
 from pathflowai.utils import generate_tissue_mask
 from .utils import load_image
+from itertools import product
 from histomicstk.preprocessing.color_normalization.deconvolution_based_normalization import deconvolution_based_normalization
 
 
@@ -59,18 +60,20 @@ def preprocess(image_file="",
     mask_parameters.update(new_mask_parameters)
     mask=generate_tissue_mask(image,
                              **mask_parameters)
-
+    basename = os.path.splitext(os.path.basename(image_file))[0]
+    x_max = image.shape[0]
+    y_max = image.shape[1]
     if stain_target_parameters and os.path.exists(stain_target_parameters):
         res_returned, coords=stain_norm(image, mask, compression, stain_target_parameters, NORM_PATCH_SIZE)
         for res_,(i,j) in tqdm.tqdm(zip(res_returned,coords),total=len(coords)):
             image[i:i+NORM_PATCH_SIZE,j:j+NORM_PATCH_SIZE]=res_
 
-    patch_info=pd.DataFrame([[basename,x,y,patch_size,"0"] for x,y in tqdm.tqdm(list(product(range(0,x_max-patch_size,patch_size),range(0,y_max-patch_size,patch_size))))],columns=['ID','x','y','patch_size','annotation'])
+    patch_info=pd.DataFrame([[basename,x,y,patch_size,"0"] for x,y in tqdm.tqdm(list(product(range(0,x_max-patch_size+1,patch_size),range(0,y_max-patch_size,patch_size))))],columns=['ID','x','y','patch_size','annotation'])
     patches=np.stack([image[x:x+patch_size,y:y+patch_size] for x,y in tqdm.tqdm(patch_info[['x','y']].values.tolist())])
-    include_patches=np.stack([masks[k][x:x+patch_size,y:y+patch_size] for x,y in tqdm.tqdm(patch_info[['x','y']].values.tolist())]).mean((1,2))>=threshold
+    include_patches=np.stack([mask[x:x+patch_size,y:y+patch_size] for x,y in tqdm.tqdm(patch_info[['x','y']].values.tolist())]).mean((1,2))>=threshold
 
-    os.path.makedirs("masks",exist_ok=True)
-    os.path.makedirs("patches",exist_ok=True)
+    os.makedirs("masks",exist_ok=True)
+    os.makedirs("patches",exist_ok=True)
     if save_tissue_mask:
         np.save(f"masks/{basename}.npy",mask)
     np.save(f"patches/{basename}.npy",patches[include_patches])
