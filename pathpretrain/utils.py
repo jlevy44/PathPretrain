@@ -1,4 +1,4 @@
-import tqdm,cv2
+import tqdm,cv2, os
 import pandas as pd, networkx as nx, numpy as np
 from sklearn.metrics.pairwise import euclidean_distances
 import openslide, tifffile
