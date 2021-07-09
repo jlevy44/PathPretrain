@@ -16,9 +16,9 @@ DEFAULT_MASK_PARAMETERS=dict(compression=10,
                             kernel=5,
                             min_object_size=100000,
                             return_convex_hull=False,
-                            keep_holes=False,#
+                            keep_holes=False,
                             max_hole_size=6000,
-                            gray_before_close=False,
+                            gray_before_close=True,
                             blur_size=51)
 
 NORM_PATCH_SIZE=1024
