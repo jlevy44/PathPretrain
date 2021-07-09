@@ -3,7 +3,7 @@ import cv2, os, tqdm, dask
 import pandas as pd, numpy as np
 import histomicstk as htk
 from dask.diagnostics import ProgressBar
-from pathflowai.utils import generate_tissue_mask
+from .utils import generate_tissue_mask
 from .utils import load_image
 from itertools import product
 from histomicstk.preprocessing.color_normalization.deconvolution_based_normalization import deconvolution_based_normalization
