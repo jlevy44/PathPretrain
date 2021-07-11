@@ -18,7 +18,7 @@ class CustomDataset(Dataset):
 
     def __getitem__(self,i):
         x,y=self.xy[i]
-        X=self.X[i] if self.image_stack else self.X[x:(x+patch_size),y:(y+patch_size)]
+        X=self.X[i] if self.image_stack else self.X[x:(x+self.patch_size),y:(y+self.patch_size)]
         return self.transform(self.to_pil(X))
 
     def __len__(self):
