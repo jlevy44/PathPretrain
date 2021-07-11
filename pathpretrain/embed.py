@@ -14,10 +14,11 @@ class CustomDataset(Dataset):
         self.transform=transform
         self.to_pil=lambda x: Image.fromarray(x)
         self.ID=os.path.basename(npy_file).replace(".npy","")
+        self.image_stack=image_stack
 
     def __getitem__(self,i):
         x,y=self.xy[i]
-        X=self.X[i] if image_stack else self.X[x:(x+patch_size),y:(y+patch_size)]
+        X=self.X[i] if self.image_stack else self.X[x:(x+patch_size),y:(y+patch_size)]
         return self.transform(self.to_pil(X))
 
     def __len__(self):
