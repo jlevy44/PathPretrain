@@ -13,7 +13,7 @@ class CustomDataset(Dataset):
         self.length=self.patch_info.shape[0]
         self.transform=transform
         self.to_pil=lambda x: Image.fromarray(x)
-        self.ID=os.path.basename(npy_file).replace(".npy","")
+        self.ID=os.path.basename(npy_file).replace(".npy","").replace(".tiff","").replace(".tif","").replace(".svs","")
         self.image_stack=image_stack
 
     def __getitem__(self,i):
