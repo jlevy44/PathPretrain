@@ -16,7 +16,11 @@ def fit_spline(pts):
         pass
     return pts
 
-def process_xml(xml,compression=1,include_labels=[],spline_fit=True):
+def process_xml(xml,
+                compression=1,
+                include_labels=[],
+                spline_fit=True,
+                transpose=True):
     with open(xml,"rb") as f:
             d=xd.parse(f)
     cells=[]
@@ -40,6 +44,7 @@ def process_xml(xml,compression=1,include_labels=[],spline_fit=True):
 
     contour_df=pd.DataFrame(pd.Series(cells,name='contours'))
     contour_df['contours']=contour_df['contours'].map(lambda x:x/compression)
+    if transpose: contour_df['contours']=contour_df['contours'].map(lambda x:x[:,[1,0]])
     contour_df['xmin']=contour_df['contours'].map(lambda x: x[:,0].min())
     contour_df['xmax']=contour_df['contours'].map(lambda x: x[:,0].max())
     contour_df['ymin']=contour_df['contours'].map(lambda x: x[:,1].min())
@@ -53,6 +58,7 @@ def process_xml(xml,compression=1,include_labels=[],spline_fit=True):
     if cell_dot:
         dot_annotations=pd.DataFrame(cell_dot,columns=['x','y','lbl']) if cell_dot else None
         dot_annotations.loc[:,['x','y']]=np.round(dot_annotations.loc[:,['x','y']]/compression).astype(int)
+        if transpose: dot_annotations.loc[:,['x','y']]=dot_annotations.loc[:,['y','x']]
     else:
         dot_annotations=None
 
