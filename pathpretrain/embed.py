@@ -8,6 +8,7 @@ class CustomDataset(Dataset):
     def __init__(self, patch_info, npy_file, transform, image_stack=False):
         self.X=load_image(npy_file)
         self.patch_info=pd.read_pickle(patch_info)
+        print(self.patch_info.columns)
         self.xy=self.patch_info[['x','y']].values
         self.patch_size=self.patch_info['patch_size'].iloc[0]
         self.length=self.patch_info.shape[0]
