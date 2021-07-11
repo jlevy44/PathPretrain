@@ -173,11 +173,11 @@ def train_model(inputs_dir='inputs_training',
         predict_set='custom'
     else:
         if tensor_dataset:
-            datasets = {x: torch.load(os.path.join(inputs_dir,f"{x}_data.pth")) for x in ['train','val']}
+            datasets = {x: torch.load(os.path.join(inputs_dir,f"{x}_data.pth")) for x in ['train','val', 'test'] if os.path.exists(os.path.join(inputs_dir,f"{x}_data.pth"))}
             for k in datasets:
                 if len(datasets[k].tensors[1].shape)>1 and not semantic_segmentation: datasets[k]=TensorDataset(datasets[k].tensors[0],datasets[k].tensors[1].flatten())
         elif pickle_dataset:
-            datasets = {x: PickleDataset(os.path.join(inputs_dir,f"{x}_data.pkl"),transformers[x],label_map) for x in ['train','val']}
+            datasets = {x: PickleDataset(os.path.join(inputs_dir,f"{x}_data.pkl"),transformers[x],label_map) for x in ['train','val', 'test'] if os.path.exists(os.path.join(inputs_dir,f"{x}_data.pkl"))}
         else:
             datasets = {x: Datasets.ImageFolder(os.path.join(
                 inputs_dir, x), transformers[x]) for x in ['train', 'val', 'test']}
