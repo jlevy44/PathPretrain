@@ -52,7 +52,8 @@ def preprocess(image_file="",
                new_mask_parameters=dict(),
                stain_target_parameters="",
                compression=8,
-               patch_size=256
+               patch_size=256,
+               patch_dir="patches"
                ):
 
     mask_parameters=DEFAULT_MASK_PARAMETERS
@@ -73,11 +74,11 @@ def preprocess(image_file="",
     include_patches=np.stack([mask[x:x+patch_size,y:y+patch_size] for x,y in tqdm.tqdm(patch_info[['x','y']].values.tolist())]).mean((1,2))>=threshold
 
     os.makedirs("masks",exist_ok=True)
-    os.makedirs("patches",exist_ok=True)
+    os.makedirs(patch_dir,exist_ok=True)
     if save_tissue_mask:
         np.save(f"masks/{basename}.npy",mask)
-    np.save(f"patches/{basename}.npy",patches[include_patches])
-    patch_info.iloc[include_patches].to_pickle(f"patches/{basename}.pkl")
+    np.save(f"{patch_dir}/{basename}.npy",patches[include_patches])
+    patch_info.iloc[include_patches].to_pickle(f"{patch_dir}/{basename}.pkl")
 
 def main():
     fire.Fire(preprocess)
