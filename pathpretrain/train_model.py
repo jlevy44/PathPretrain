@@ -189,7 +189,7 @@ def train_model(inputs_dir='inputs_training',
                            num_classes,
                            semantic_segmentation=semantic_segmentation,
                            pretrained=pretrained,
-                           n_aux_features=None if semantic_segmentation or "n_aux_features" not in dir(datasets.get('train',datasets['custom'])) else datasets.get('train',datasets['custom']).n_aux_features)
+                           n_aux_features=None if semantic_segmentation or "n_aux_features" not in dir(datasets.get('train',datasets.get('custom',None))) else datasets.get('train',datasets.get('custom',None)).n_aux_features)
 
     if verbose: print(model)
 
