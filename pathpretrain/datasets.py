@@ -9,7 +9,7 @@ from torch.utils.data import Dataset, DataLoader
 from .utils import load_image
 
 class NPYDataset(Dataset):
-    def __init__(self, patch_info, npy_file, transform, tensor_dataset):
+    def __init__(self, patch_info, npy_file, transform, tensor_dataset=False):
         self.ID=os.path.basename(npy_file).replace(".npy","").replace(".tiff","").replace(".tif","").replace(".svs","")
         self.patch_info=patch_info.loc[patch_info["ID"]==self.ID].reset_index()
         self.X=load_image(npy_file)
@@ -20,7 +20,7 @@ class NPYDataset(Dataset):
     def __getitem__(self,i):
         x,y,patch_size=self.patch_info.loc[i,["x","y","patch_size"]]
         img=self.X[x:x+patch_size,y:y+patch_size]
-        return self.transform(self.to_pil(img)) if not self.tensor_dataset else torch.tensor(img)
+        return self.transform(self.to_pil(img)) if not self.tensor_dataset else torch.tensor(img),torch.tensor([-1])
 
     def __len__(self):
         return self.patch_info.shape[0]
@@ -30,7 +30,7 @@ class NPYDataset(Dataset):
         dataloader=DataLoader(self,batch_size=batch_size,shuffle=False)
         n_batches=len(self)//batch_size
         with torch.no_grad():
-            for i,X in tqdm.tqdm(enumerate(dataloader),total=n_batches):
+            for i,(X,y) in tqdm.tqdm(enumerate(dataloader),total=n_batches):
                 if torch.cuda.is_available(): X=X.cuda()
                 if self.tensor_dataset: X = self.transform(X)
                 z=model(X).detach().cpu().numpy()
