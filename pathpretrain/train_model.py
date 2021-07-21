@@ -14,6 +14,7 @@ from PIL import Image
 import torch.nn as nn
 import kornia.augmentation as K, kornia.geometry.transform as G
 from .datasets import NPYDataset, PickleDataset
+import pysnooper
 
 class Reshape(nn.Module):
     def __init__(self):
@@ -125,6 +126,7 @@ def generate_kornia_segmentation_transforms(image_size=224, resize=256, mean=[],
             transforms[k]=transforms[k].cuda()
     return transforms
 
+@pysnooper.snoop()
 def train_model(inputs_dir='inputs_training',
                 learning_rate=1e-4,
                 n_epochs=300,
