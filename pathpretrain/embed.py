@@ -3,9 +3,10 @@ from torch.utils.data import Dataset, DataLoader
 from PIL import Image
 from .train_model import train_model, generate_transformers, generate_kornia_transforms
 from .utils import load_image
+import pysnooper
 
 class CustomDataset(Dataset):
-    def __init__(self, patch_info, npy_file, transform, image_stack=False):
+    def __init__(self, patch_info, npy_file, transform, image_stack=False, predict_only=False, target_col=None):
         self.X=load_image(npy_file)
         self.patch_info=pd.read_pickle(patch_info)
         self.xy=self.patch_info[['x','y']].values
@@ -15,11 +16,15 @@ class CustomDataset(Dataset):
         self.to_pil=lambda x: Image.fromarray(x)
         self.ID=os.path.basename(npy_file).replace(".npy","").replace(".tiff","").replace(".tif","").replace(".svs","")
         self.image_stack=image_stack
+        self.predict_only=predict_only
+        self.target_col=target_col
 
     def __getitem__(self,i):
         x,y=self.xy[i]
         X=self.X[i] if self.image_stack else self.X[x:(x+self.patch_size),y:(y+self.patch_size)]
-        return self.transform(self.to_pil(X))
+        X=self.transform(self.to_pil(X))
+        if not self.predict_only: return X
+        else: return X, torch.LongTensor([self.patch_info.iloc[i][self.target_col]])
 
     def __len__(self):
         return self.length
@@ -34,7 +39,9 @@ class CustomDataset(Dataset):
                 z=model(X).detach().cpu().numpy()
                 Z.append(z)
         Z=np.vstack(Z)
-        torch.save(dict(embeddings=Z,patch_info=self.patch_info),os.path.join(out_dir,f"{self.ID}.pkl"))
+        results=dict(embeddings=Z,patch_info=self.patch_info)
+        torch.save(results,os.path.join(out_dir,f"{self.ID}.pkl"))
+        return results
 
 def generate_embeddings(patch_info_file="",
                         image_file="",
@@ -46,7 +53,8 @@ def generate_embeddings(patch_info_file="",
                         resize=256,
                         mean=[0.5, 0.5, 0.5],
                         std=[0.1, 0.1, 0.1],
-                        image_stack=False):
+                        image_stack=False,
+                        predict_col=""):
 
     os.makedirs("cnn_embeddings",exist_ok=True)
     train_model(model_save_loc=model_save_loc,
@@ -60,7 +68,9 @@ def generate_embeddings(patch_info_file="",
                                                                     resize=resize,
                                                                     mean=mean,
                                                                     std=std)['test'],
-                                             image_stack
+                                             image_stack,
+                                             True if predict_col else False,
+                                             predict_col
                                              ),
                 gpu_id=gpu_id)
 
