@@ -243,7 +243,7 @@ def train_model(inputs_dir='inputs_training',
 
         if extract_embeddings:
             assert not semantic_segmentation, "Semantic Segmentation not implemented for whole slide segmentation"
-            trainer.model=nn.Sequential(trainer.model.features,Reshape(),trainer.model.output)
+            trainer.model=nn.Sequential(trainer.model.features,Reshape())#,trainer.model.output
             if predict_set=='custom':
                 dataset=datasets['custom']
                 assert 'embed' in dir(dataset), "Embedding method required for dataset with model input, batch size and embedding output directory as arguments."
@@ -264,6 +264,8 @@ def train_model(inputs_dir='inputs_training',
             Y = dict()
 
             Y['pred'],Y['true'] = trainer.predict(dataloaders[predict_set])
+
+            Y['model'] = trainer.model
 
             # Y['true'] = datasets[predict_set].targets
 

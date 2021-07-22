@@ -22,7 +22,7 @@ class CustomDataset(Dataset):
         x,y=self.xy[i]
         X=self.X[i] if self.image_stack else self.X[x:(x+self.patch_size),y:(y+self.patch_size)]
         X=self.transform(self.to_pil(X))
-        if not self.predict_only: return X
+        if not self.predict_only: return X, torch.LongTensor([x,y])
         else: return X, torch.LongTensor([self.patch_info.iloc[i][self.target_col]])
 
     def __len__(self):
@@ -30,15 +30,19 @@ class CustomDataset(Dataset):
 
     def embed(self,model,batch_size,out_dir):
         Z=[]
+        pos_xy=[]
         dataloader=DataLoader(self,batch_size=batch_size,shuffle=False)
         n_batches=len(self)//batch_size
+        model.train(False)
         with torch.no_grad():
-            for i,X in tqdm.tqdm(enumerate(dataloader),total=n_batches):
+            for i,(X,xy) in tqdm.tqdm(enumerate(dataloader),total=n_batches):
                 if torch.cuda.is_available(): X=X.cuda()
                 z=model(X).detach().cpu().numpy()
+                pos_xy.append(xy.numpy())
                 Z.append(z)
         Z=np.vstack(Z)
-        results=dict(embeddings=Z,patch_info=self.patch_info)
+        pos_xy=np.vstack(pos_xy)
+        results=dict(embeddings=Z,patch_info=self.patch_info,model=model,pos_xy=pos_xy)
         torch.save(results,os.path.join(out_dir,f"{self.ID}.pkl"))
         return results
 
