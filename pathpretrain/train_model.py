@@ -14,7 +14,7 @@ from PIL import Image
 import torch.nn as nn
 import kornia.augmentation as K, kornia.geometry.transform as G
 from .datasets import NPYDataset, PickleDataset
-import pysnooper
+# import pysnooper
 
 class Reshape(nn.Module):
     def __init__(self):
@@ -126,7 +126,7 @@ def generate_kornia_segmentation_transforms(image_size=224, resize=256, mean=[],
             transforms[k]=transforms[k].cuda()
     return transforms
 
-@pysnooper.snoop()
+# @pysnooper.snoop()
 def train_model(inputs_dir='inputs_training',
                 learning_rate=1e-4,
                 n_epochs=300,
@@ -243,7 +243,7 @@ def train_model(inputs_dir='inputs_training',
 
         if extract_embeddings:
             assert not semantic_segmentation, "Semantic Segmentation not implemented for whole slide segmentation"
-            trainer.model=nn.Sequential(trainer.model.features,Reshape(),trainer.model.output)#
+            trainer.model=nn.Sequential(trainer.model.features,Reshape())#,trainer.model.output
             if predict_set=='custom':
                 dataset=datasets['custom']
                 assert 'embed' in dir(dataset), "Embedding method required for dataset with model input, batch size and embedding output directory as arguments."
