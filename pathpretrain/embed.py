@@ -3,7 +3,6 @@ from torch.utils.data import Dataset, DataLoader
 from PIL import Image
 from .train_model import train_model, generate_transformers, generate_kornia_transforms
 from .utils import load_image
-import pysnooper
 
 class CustomDataset(Dataset):
     def __init__(self, patch_info, npy_file, transform, image_stack=False, predict_only=False, target_col=None):
@@ -54,7 +53,7 @@ def generate_embeddings(patch_info_file="",
                         mean=[0.5, 0.5, 0.5],
                         std=[0.1, 0.1, 0.1],
                         image_stack=False,
-                        debug_col=False):
+                        debug_col=''):
 
     os.makedirs("cnn_embeddings",exist_ok=True)
     train_model(model_save_loc=model_save_loc,
@@ -73,7 +72,8 @@ def generate_embeddings(patch_info_file="",
                                              True if debug_col else False,
                                              debug_col
                                              ),
-                gpu_id=gpu_id)
+                gpu_id=gpu_id,
+                save_predictions=True)
 
 def main():
     fire.Fire(generate_embeddings)
