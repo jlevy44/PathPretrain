@@ -265,7 +265,7 @@ def train_model(inputs_dir='inputs_training',
 
             Y['pred'],Y['true'] = trainer.predict(dataloaders[predict_set])
 
-            Y['model'] = trainer.model
+            # Y['model'] = trainer.model
 
             # Y['true'] = datasets[predict_set].targets
 

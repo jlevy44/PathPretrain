@@ -42,7 +42,7 @@ class CustomDataset(Dataset):
                 Z.append(z)
         Z=np.vstack(Z)
         pos_xy=np.vstack(pos_xy)
-        results=dict(embeddings=Z,patch_info=self.patch_info,model=model,pos_xy=pos_xy)
+        results=dict(embeddings=Z,patch_info=self.patch_info,pos_xy=pos_xy)#model=model,
         torch.save(results,os.path.join(out_dir,f"{self.ID}.pkl"))
         return results
 
