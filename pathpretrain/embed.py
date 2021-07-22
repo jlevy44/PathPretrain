@@ -54,11 +54,12 @@ def generate_embeddings(patch_info_file="",
                         mean=[0.5, 0.5, 0.5],
                         std=[0.1, 0.1, 0.1],
                         image_stack=False,
-                        predict_col=""):
+                        debug_col=False):
 
     os.makedirs("cnn_embeddings",exist_ok=True)
     train_model(model_save_loc=model_save_loc,
-                extract_embeddings=True,
+                pretrained_save_loc=model_save_loc,
+                extract_embeddings=True if not debug_col else False,
                 num_classes=num_classes,
                 predict=True,
                 embedding_out_dir="cnn_embeddings/",
@@ -69,8 +70,8 @@ def generate_embeddings(patch_info_file="",
                                                                     mean=mean,
                                                                     std=std)['test'],
                                              image_stack,
-                                             True if predict_col else False,
-                                             predict_col
+                                             True if debug_col else False,
+                                             debug_col
                                              ),
                 gpu_id=gpu_id)
 
