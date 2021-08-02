@@ -126,7 +126,7 @@ def load_image(image_file, check_size=False):
     if img_ext[-1]==".npy":
         image=np.load(image_file)
     elif img_ext[-1] in [".svs",".tif",".tiff",".png"]:
-        slide=openslide.open_slide(image_file)
+        if check_size: slide=openslide.open_slide(image_file)
         image=tifffile.imread(image_file)
         if check_size and (not (int(slide.properties.get('aperio.AppMag',40))==20 or int(slide.properties.get('openslide.objective-power',40))==20)):
             image = cv2.resize(image,None,fx=1/2,fy=1/2,interpolation=cv2.INTER_CUBIC)
