@@ -58,7 +58,7 @@ def preprocess(image_file="",
                ):
 
     mask_parameters=DEFAULT_MASK_PARAMETERS
-    image=load_image(image_file,check_size=tcga_40x_downsample)
+    image=load_image(image_file,check_size=downsample_tcga_40x)
     mask_parameters.update(new_mask_parameters)
     mask=generate_tissue_mask(image,
                              **mask_parameters)
