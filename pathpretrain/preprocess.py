@@ -53,11 +53,12 @@ def preprocess(image_file="",
                stain_target_parameters="",
                compression=8,
                patch_size=256,
-               patch_dir="patches"
+               patch_dir="patches",
+               downsample_tcga_40x=False
                ):
 
     mask_parameters=DEFAULT_MASK_PARAMETERS
-    image=load_image(image_file)
+    image=load_image(image_file,check_size=tcga_40x_downsample)
     mask_parameters.update(new_mask_parameters)
     mask=generate_tissue_mask(image,
                              **mask_parameters)
