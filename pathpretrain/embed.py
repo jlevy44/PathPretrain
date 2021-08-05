@@ -57,7 +57,8 @@ def generate_embeddings(patch_info_file="",
                         mean=[0.5, 0.5, 0.5],
                         std=[0.1, 0.1, 0.1],
                         image_stack=False,
-                        debug_col=''):
+                        debug_col='',
+                        batch_size=32):
 
     os.makedirs("cnn_embeddings",exist_ok=True)
     train_model(model_save_loc=model_save_loc,
@@ -77,7 +78,8 @@ def generate_embeddings(patch_info_file="",
                                              debug_col
                                              ),
                 gpu_id=gpu_id,
-                save_predictions=True)
+                save_predictions=True,
+                batch_size=batch_size)
 
 def main():
     fire.Fire(generate_embeddings)
