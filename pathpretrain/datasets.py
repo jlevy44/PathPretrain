@@ -6,6 +6,7 @@ from PIL import Image
 import tqdm
 import numpy as np, pandas as pd
 from torch.utils.data import Dataset, DataLoader
+import glob
 from .utils import load_image
 
 class NPYDataset(Dataset):
@@ -66,6 +67,58 @@ class PickleDataset(Dataset):
         items=(self.transform(self.to_pil(self.X[idx])), torch.tensor(self.targets[idx]).long())
         if self.has_aux: items+=(torch.tensor(self.aux_data[idx]).float(),)
         return items
+
+    def __len__(self):
+        return self.length
+
+class NPYRotatingStack(Dataset):
+    def __init__(self, patch_dir, transform, sample_frac=1., sample_every=0, target_col={'old_y_true':'y_true'}):
+        self.patch_npy=np.array(glob.glob(os.path.join(patch_dir,"*.pkl")))
+        self.patch_pkl=np.vectorize(lambda x: x.replace(".npy",".pkl"))(self.patch_npy)
+        self.sample_every=sample_every
+        self.sample_frac=sample_frac
+        if self.sample_frac==1: self.sample_every=0
+        self.target_col=list(target_col.items())[0]
+        self.ref_index=None # dictionary
+        self.data={}
+        self.cache_npy=None # dictionary keys
+        self.to_pil=lambda x: Image.fromarray(x)
+        self.transform=transform
+        assert self.target_col[1]=='y_true'
+        self.targets=np.hstack([pd.read_pickle(pkl)[self.target_col[0]].values for pkl in self.patch_pkl])
+        self.load_image_annot()
+
+    def load_image_annot(self):
+        if self.sample_frac<1:
+            idx=np.arange(len(self.patch_npy))
+            idx=np.random.choice(idx,int(self.sample_frac*len(index)))
+            patch_npy=self.patch_npy[idx]
+            patch_pkl=self.patch_pkl[idx]
+            remove_npy=np.setdiff1d(self.patch_npy,patch_npy)
+            for npy in remove_npy:
+                if isinstance(self.cache_npy,type(None))==False and npy not in self.cache_npy:
+                    del self.data[npy]
+            new_data={npy:(dict(patches=load_image(npy),
+                               patch_info=pd.read_pickle(pkl)) if (isinstance(self.cache_npy,type(None))==False and npy in self.cache_npy) else self.data[k]) for npy,pkl in zip(patch_npy,patch_pkl)}
+            self.data.clear()
+            self.data=new_data
+            self.cache_npy=sorted(list(self.data.keys()))
+            self.ref_index=np.vstack([np.array(([i]*self.data[npy]['patch_info'].shape[0],list(range(self.data[npy]['patch_info'].shape[0])))).T] for i,npy in enumerate(self.cache_npy))
+        else:
+            self.data={npy:dict(patches=load_image(npy),
+                               patch_info=pd.read_pickle(pkl)) for npy,pkl in zip(self.patch_npy,self.patch_pkl)}
+            self.cache_npy=sorted(patch_npy)
+            self.ref_index=np.vstack([np.array(([i]*self.data[npy]['patch_info'].shape[0],list(range(self.data[npy]['patch_info'].shape[0])))).T] for i,npy in enumerate(self.cache_npy))
+        for npy in self.data: self.data[npy]['patch_info'][self.target_col[1]]=self.data[npy]['patch_info'][self.target_col[0]]
+        self.length=self.ref_index.shape[0]
+
+    def __getitem__(self,idx):
+        i,j=self.ref_index[idx]
+        npy=self.cache_npy[i]
+        X=self.data[npy]['patches'][j]
+        y=torch.LongTensor([self.data[npy]['patch_info'].iloc[j][self.target_col]])
+        X=self.transform(self.to_pil(X))
+        return X, y
 
     def __len__(self):
         return self.length

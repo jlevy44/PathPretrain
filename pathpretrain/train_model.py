@@ -13,7 +13,7 @@ from .models import generate_model, ModelTrainer
 from PIL import Image
 import torch.nn as nn
 import kornia.augmentation as K, kornia.geometry.transform as G
-from .datasets import NPYDataset, PickleDataset
+from .datasets import NPYDataset, PickleDataset, NPYRotatingStack
 # import pysnooper
 
 class Reshape(nn.Module):
@@ -157,9 +157,17 @@ def train_model(inputs_dir='inputs_training',
                 custom_dataset=None,
                 save_predictions=True,
                 pretrained=False,
-                save_after_n_batch=0
+                save_after_n_batch=0,
+                include_test_set=False,
+                use_npy_rotate=False,
+                sample_frac=1.,
+                sample_every=0
                 ):
     assert save_metric in ['loss','f1']
+    if use_npy_rotate: tensor_dataset,pickle_dataset=False,False
+    else: sample_every=0
+    if predict: include_test_set=True
+    if predict: assert not use_npy_rotate
     if extract_embeddings: assert predict, "Must be in prediction mode to extract embeddings"
     if tensor_dataset: assert not pickle_dataset, "Cannot have pickle and tensor classes activated"
     if semantic_segmentation and custom_dataset is None: assert tensor_dataset==True, "For now, can only perform semantic segmentation with TensorDataset"
@@ -175,14 +183,16 @@ def train_model(inputs_dir='inputs_training',
         predict_set='custom'
     else:
         if tensor_dataset:
-            datasets = {x: torch.load(os.path.join(inputs_dir,f"{x}_data.pth")) for x in ['train','val', 'test'] if os.path.exists(os.path.join(inputs_dir,f"{x}_data.pth"))}
+            datasets = {x: torch.load(os.path.join(inputs_dir,f"{x}_data.pth")) for x in (['train','val']+(['test'] if include_test_set else [])) if os.path.exists(os.path.join(inputs_dir,f"{x}_data.pth"))}
             for k in datasets:
                 if len(datasets[k].tensors[1].shape)>1 and not semantic_segmentation: datasets[k]=TensorDataset(datasets[k].tensors[0],datasets[k].tensors[1].flatten())
         elif pickle_dataset:
-            datasets = {x: PickleDataset(os.path.join(inputs_dir,f"{x}_data.pkl"),transformers[x],label_map) for x in ['train','val', 'test'] if os.path.exists(os.path.join(inputs_dir,f"{x}_data.pkl"))}
+            datasets = {x: PickleDataset(os.path.join(inputs_dir,f"{x}_data.pkl"),transformers[x],label_map) for x in (['train','val']+(['test'] if include_test_set else [])) if os.path.exists(os.path.join(inputs_dir,f"{x}_data.pkl"))}
+        elif use_npy_rotate:
+            datasets = {x: NPYRotatingStack(os.path.join(inputs_dir,x),transformers[x],(sample_frac if x=='train' else 1.),sample_every,label_map) for x in (['train','val']+(['test'] if include_test_set else [])) if os.path.exists(os.path.join(inputs_dir,x))}
         else:
             datasets = {x: Datasets.ImageFolder(os.path.join(
-                inputs_dir, x), transformers[x]) for x in ['train', 'val', 'test']}
+                inputs_dir, x), transformers[x]) for x in (['train','val']+(['test'] if include_test_set else []))}
 
     dataloaders = {x: DataLoader(
         datasets[x], batch_size=batch_size, shuffle=(x == 'train' and not predict), worker_init_fn=worker_init_fn) for x in datasets}
