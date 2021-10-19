@@ -25,6 +25,8 @@ def process_xml(xml,
                 return_contour=True):
     with open(xml,"rb") as f:
         d=xd.parse(f)
+    contour_df=None
+    dot_annotations=None
     contours=[]
     dots=[]
     lbls=[]
@@ -62,8 +64,6 @@ def process_xml(xml,
         dot_annotations=pd.DataFrame(dots,columns=['x','y','lbl']) if dots else None
         dot_annotations.loc[:,['x','y']]=np.round(dot_annotations.loc[:,['x','y']]/compression).astype(int)
         if transpose: dot_annotations.loc[:,['x','y']]=dot_annotations.loc[:,['y','x']]
-    else:
-        dot_annotations=None
 
     if contours and include_labels:
         contour_df=contour_df[contour_df['lbl'].isin(include_labels)]
