@@ -20,49 +20,52 @@ def process_xml(xml,
                 compression=1,
                 include_labels=[],
                 spline_fit=True,
-                transpose=True):
+                transpose=True,
+                return_dot=True,
+                return_contour=True):
     with open(xml,"rb") as f:
-            d=xd.parse(f)
-    cells=[]
-    cell_dot=[]
+        d=xd.parse(f)
+    contours=[]
+    dots=[]
     lbls=[]
     for i,annotation in enumerate(d['ASAP_Annotations']["Annotations"]["Annotation"]):
-        if annotation['@Type'] in ['Polygon','Spline']:
+        if return_contour and annotation['@Type'] in ['Polygon','Spline']:
             try:
                 lbl=annotation["@PartOfGroup"]
                 contour=np.array([(float(coord["@X"]),float(coord["@Y"])) for coord in annotation["Coordinates"]["Coordinate"]])
-                cells.append(contour)
+                contours.append(contour)
                 lbls.append(lbl)
             except:
                 print(xml,i,annotation.keys())
 
-        if annotation["@Type"]=="Dot":
+        if return_dot and annotation["@Type"]=="Dot":
             lbl=annotation.get("@PartOfGroup","")
-            cell_dot.append((float(annotation["Coordinates"]["Coordinate"]["@X"]),
+            dots.append((float(annotation["Coordinates"]["Coordinate"]["@X"]),
                              float(annotation["Coordinates"]["Coordinate"]["@Y"]),
                              lbl))
 
-    contour_df=pd.DataFrame(pd.Series(cells,name='contours'))
-    contour_df['contours']=contour_df['contours'].map(lambda x:x/compression)
-    if transpose: contour_df['contours']=contour_df['contours'].map(lambda x:x[:,[1,0]])
-    contour_df['xmin']=contour_df['contours'].map(lambda x: x[:,0].min())
-    contour_df['xmax']=contour_df['contours'].map(lambda x: x[:,0].max())
-    contour_df['ymin']=contour_df['contours'].map(lambda x: x[:,1].min())
-    contour_df['ymax']=contour_df['contours'].map(lambda x: x[:,1].max())
-    contour_df['xmean']=contour_df['contours'].map(lambda x: x[:,0].mean())
-    contour_df['ymean']=contour_df['contours'].map(lambda x: x[:,1].mean())
-    contour_df['lbl']=[lbl.lower() for lbl in lbls]
+    if countours:
+        contour_df=pd.DataFrame(pd.Series(contours,name='contours'))
+        contour_df['contours']=contour_df['contours'].map(lambda x:x/compression)
+        if transpose: contour_df['contours']=contour_df['contours'].map(lambda x:x[:,[1,0]])
+        contour_df['xmin']=contour_df['contours'].map(lambda x: x[:,0].min())
+        contour_df['xmax']=contour_df['contours'].map(lambda x: x[:,0].max())
+        contour_df['ymin']=contour_df['contours'].map(lambda x: x[:,1].min())
+        contour_df['ymax']=contour_df['contours'].map(lambda x: x[:,1].max())
+        contour_df['xmean']=contour_df['contours'].map(lambda x: x[:,0].mean())
+        contour_df['ymean']=contour_df['contours'].map(lambda x: x[:,1].mean())
+        contour_df['lbl']=[lbl.lower() for lbl in lbls]
 
-    if spline_fit: contour_df.loc[:,'contours']=contour_df['contours'].map(fit_spline)
+        if spline_fit: contour_df.loc[:,'contours']=contour_df['contours'].map(fit_spline)
 
-    if cell_dot:
-        dot_annotations=pd.DataFrame(cell_dot,columns=['x','y','lbl']) if cell_dot else None
+    if dots:
+        dot_annotations=pd.DataFrame(dots,columns=['x','y','lbl']) if dots else None
         dot_annotations.loc[:,['x','y']]=np.round(dot_annotations.loc[:,['x','y']]/compression).astype(int)
         if transpose: dot_annotations.loc[:,['x','y']]=dot_annotations.loc[:,['y','x']]
     else:
         dot_annotations=None
 
-    if include_labels:
+    if contours and include_labels:
         contour_df=contour_df[contour_df['lbl'].isin(include_labels)]
 
     return dict(contour=contour_df,
