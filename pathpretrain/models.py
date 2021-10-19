@@ -584,7 +584,7 @@ class ModelTrainer:
             print("Epoch {}: Train Loss {}, Val Loss {}, Train Time {}, Val Time {}".format(
                 epoch, train_loss, val_loss, train_time, val_time))
             self.save_best_val_model(val_loss, val_f1, self.val_losses, self.val_f1, epoch, save_model)
-            if "save_every" in dir(train_dataloader.dataset) and train_dataloader.dataset.save_every and train_dataloader.dataset.save_every%epoch==0:
+            if "save_every" in dir(train_dataloader.dataset) and train_dataloader.dataset.save_every and epoch%train_dataloader.dataset.save_every==0:
                 train_dataloader.dataset.load_image_annot()
         if save_model:
             print("Saving best model at epoch {}".format(self.best_epoch))
