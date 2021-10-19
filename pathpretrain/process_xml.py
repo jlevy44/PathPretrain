@@ -40,11 +40,14 @@ def process_xml(xml,
             except:
                 print(xml,i,annotation.keys())
 
-        if return_dot and annotation["@Type"]=="Dot":
-            lbl=annotation.get("@PartOfGroup","")
-            dots.append((float(annotation["Coordinates"]["Coordinate"]["@X"]),
-                             float(annotation["Coordinates"]["Coordinate"]["@Y"]),
-                             lbl))
+        try:
+            if return_dot and annotation["@Type"]=="Dot":
+                lbl=annotation.get("@PartOfGroup","")
+                dots.append((float(annotation["Coordinates"]["Coordinate"]["@X"]),
+                                 float(annotation["Coordinates"]["Coordinate"]["@Y"]),
+                                 lbl))
+        except:
+            print(annotation)
 
     if contours:
         contour_df=pd.DataFrame(pd.Series(contours,name='contours'))
