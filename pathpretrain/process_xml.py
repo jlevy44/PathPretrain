@@ -30,24 +30,26 @@ def process_xml(xml,
     contours=[]
     dots=[]
     lbls=[]
-    for i,annotation in enumerate(d['ASAP_Annotations']["Annotations"]["Annotation"]):
-        if return_contour and annotation['@Type'] in ['Polygon','Spline']:
-            try:
-                lbl=annotation["@PartOfGroup"]
-                contour=np.array([(float(coord["@X"]),float(coord["@Y"])) for coord in annotation["Coordinates"]["Coordinate"]])
-                contours.append(contour)
-                lbls.append(lbl)
-            except:
-                print(xml,i,annotation.keys())
+    annotations=d['ASAP_Annotations']["Annotations"]["Annotation"]
+    if annotations:
+        for i,annotation in enumerate(annotations):
+            if return_contour and annotation['@Type'] in ['Polygon','Spline']:
+                try:
+                    lbl=annotation["@PartOfGroup"]
+                    contour=np.array([(float(coord["@X"]),float(coord["@Y"])) for coord in annotation["Coordinates"]["Coordinate"]])
+                    contours.append(contour)
+                    lbls.append(lbl)
+                except:
+                    print(xml,i,annotation.keys())
 
-        try:
-            if return_dot and annotation["@Type"]=="Dot":
-                lbl=annotation.get("@PartOfGroup","")
-                dots.append((float(annotation["Coordinates"]["Coordinate"]["@X"]),
-                                 float(annotation["Coordinates"]["Coordinate"]["@Y"]),
-                                 lbl))
-        except:
-            print(annotation)
+            try:
+                if return_dot and annotation["@Type"]=="Dot":
+                    lbl=annotation.get("@PartOfGroup","")
+                    dots.append((float(annotation["Coordinates"]["Coordinate"]["@X"]),
+                                     float(annotation["Coordinates"]["Coordinate"]["@Y"]),
+                                     lbl))
+            except:
+                print(annotation)
 
     if contours:
         contour_df=pd.DataFrame(pd.Series(contours,name='contours'))
