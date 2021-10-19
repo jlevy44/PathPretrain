@@ -46,7 +46,7 @@ def process_xml(xml,
                              float(annotation["Coordinates"]["Coordinate"]["@Y"]),
                              lbl))
 
-    if countours:
+    if contours:
         contour_df=pd.DataFrame(pd.Series(contours,name='contours'))
         contour_df['contours']=contour_df['contours'].map(lambda x:x/compression)
         if transpose: contour_df['contours']=contour_df['contours'].map(lambda x:x[:,[1,0]])
