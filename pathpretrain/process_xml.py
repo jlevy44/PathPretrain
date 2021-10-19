@@ -30,9 +30,9 @@ def process_xml(xml,
     contours=[]
     dots=[]
     lbls=[]
-    annotations=d['ASAP_Annotations']["Annotations"]["Annotation"]
+    annotations=d['ASAP_Annotations']["Annotations"]
     if annotations:
-        for i,annotation in enumerate(annotations):
+        for i,annotation in enumerate(annotations["Annotation"]):
             if return_contour and annotation['@Type'] in ['Polygon','Spline']:
                 try:
                     lbl=annotation["@PartOfGroup"]
