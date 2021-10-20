@@ -32,6 +32,8 @@ def process_xml(xml,
     dots=[]
     lbls=[]
     annotations=d['ASAP_Annotations']["Annotations"]
+    if isinstance(annotations,type(None)):
+        annotations=dict(Annotation=[])
     if isinstance(annotations["Annotation"],OrderedDict):
         annotations["Annotation"]=[annotations["Annotation"]]
     if annotations["Annotation"]:
