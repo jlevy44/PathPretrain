@@ -3,6 +3,7 @@ from scipy.interpolate import splprep, splev
 import xmltodict as xd
 import pandas as pd
 import tqdm
+from collections import OrderedDict
 
 def fit_spline(pts):
     try:
@@ -31,6 +32,8 @@ def process_xml(xml,
     dots=[]
     lbls=[]
     annotations=d['ASAP_Annotations']["Annotations"]
+    if isinstance(annotations["Annotation"],OrderedDict):
+        annotations["Annotation"]=[annotations["Annotation"]]
     if annotations:
         for i,annotation in enumerate(annotations["Annotation"]):
             try:
