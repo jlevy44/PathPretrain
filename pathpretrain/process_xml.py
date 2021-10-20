@@ -33,16 +33,16 @@ def process_xml(xml,
     annotations=d['ASAP_Annotations']["Annotations"]
     if annotations:
         for i,annotation in enumerate(annotations["Annotation"]):
-            if return_contour and annotation['@Type'] in ['Polygon','Spline']:
-                try:
-                    lbl=annotation["@PartOfGroup"]
-                    contour=np.array([(float(coord["@X"]),float(coord["@Y"])) for coord in annotation["Coordinates"]["Coordinate"]])
-                    contours.append(contour)
-                    lbls.append(lbl)
-                except:
-                    print(xml,i,annotation.keys())
-
             try:
+                if return_contour and annotation['@Type'] in ['Polygon','Spline']:
+                    try:
+                        lbl=annotation["@PartOfGroup"]
+                        contour=np.array([(float(coord["@X"]),float(coord["@Y"])) for coord in annotation["Coordinates"]["Coordinate"]])
+                        contours.append(contour)
+                        lbls.append(lbl)
+                    except:
+                        print(xml,i,annotation.keys())
+
                 if return_dot and annotation["@Type"]=="Dot":
                     lbl=annotation.get("@PartOfGroup","")
                     dots.append((float(annotation["Coordinates"]["Coordinate"]["@X"]),
