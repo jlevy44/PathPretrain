@@ -34,7 +34,7 @@ def process_xml(xml,
     annotations=d['ASAP_Annotations']["Annotations"]
     if isinstance(annotations["Annotation"],OrderedDict):
         annotations["Annotation"]=[annotations["Annotation"]]
-    if annotations:
+    if annotations["Annotation"]:
         for i,annotation in enumerate(annotations["Annotation"]):
             try:
                 if return_contour and annotation['@Type'] in ['Polygon','Spline']:
