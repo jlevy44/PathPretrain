@@ -162,7 +162,7 @@ def train_model(inputs_dir='inputs_training',
                 use_npy_rotate=False,
                 sample_frac=1.,
                 sample_every=0,
-                num_workers=8
+                num_workers=0
                 ):
     assert save_metric in ['loss','f1']
     if use_npy_rotate: tensor_dataset,pickle_dataset=False,False
