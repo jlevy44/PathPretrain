@@ -161,7 +161,8 @@ def train_model(inputs_dir='inputs_training',
                 include_test_set=False,
                 use_npy_rotate=False,
                 sample_frac=1.,
-                sample_every=0
+                sample_every=0,
+                num_workers=8
                 ):
     assert save_metric in ['loss','f1']
     if use_npy_rotate: tensor_dataset,pickle_dataset=False,False
@@ -195,7 +196,7 @@ def train_model(inputs_dir='inputs_training',
                 inputs_dir, x), transformers[x]) for x in (['train','val']+(['test'] if include_test_set else []))}
 
     dataloaders = {x: DataLoader(
-        datasets[x], batch_size=batch_size, shuffle=(x == 'train' and not predict), worker_init_fn=worker_init_fn) for x in datasets}
+        datasets[x], batch_size=batch_size, num_workers=num_workers, shuffle=(x == 'train' and not predict), worker_init_fn=worker_init_fn) for x in datasets}
 
     model = generate_model(architecture,
                            num_classes,
