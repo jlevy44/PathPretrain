@@ -23,14 +23,17 @@ def process_xml(xml,
                 spline_fit=True,
                 transpose=True,
                 return_dot=True,
-                return_contour=True):
+                return_contour=True,
+                return_boxes=False):
     with open(xml,"rb") as f:
         d=xd.parse(f)
     contour_df=None
     dot_annotations=None
+    box_df=None
     contours=[]
     dots=[]
     lbls=[]
+    boxes=[]
     annotations=d['ASAP_Annotations']["Annotations"]
     if isinstance(annotations,type(None)):
         annotations=dict(Annotation=[])
@@ -53,6 +56,15 @@ def process_xml(xml,
                     dots.append((float(annotation["Coordinates"]["Coordinate"]["@X"]),
                                      float(annotation["Coordinates"]["Coordinate"]["@Y"]),
                                      lbl))
+
+                if return_boxes and annotation['@Type']=='Rectangle':
+                    try:
+                        lbl=annotation["@PartOfGroup"]
+                        box_coords=np.array([(float(coord["@X"]),float(coord["@Y"])) for coord in annotation["Coordinates"]["Coordinate"]])
+                        boxes.append((box_coords,lbl))
+                    except:
+                        print(xml,i,annotation.keys())
+
             except:
                 print(annotation)
 
@@ -75,8 +87,22 @@ def process_xml(xml,
         dot_annotations.loc[:,['x','y']]=np.round(dot_annotations.loc[:,['x','y']]/compression).astype(int)
         if transpose: dot_annotations.loc[:,['x','y']]=dot_annotations.loc[:,['y','x']]
 
+    if boxes:
+        box_df=pd.DataFrame(pd.Series([b[0] for b in boxes],name='boxes'))
+        box_df['lbl']=[b[1].lower() for b in boxes]
+        box_df['boxes']=box_df['boxes'].map(lambda x:x/compression)
+        if transpose: box_df['boxes']=box_df['boxes'].map(lambda x:x[:,[1,0]])
+        box_df['xmin']=box_df['boxes'].map(lambda x: x[:,0].min())
+        box_df['xmax']=box_df['boxes'].map(lambda x: x[:,0].max())
+        box_df['ymin']=box_df['boxes'].map(lambda x: x[:,1].min())
+        box_df['ymax']=box_df['boxes'].map(lambda x: x[:,1].max())
+        box_df['xmean']=box_df['boxes'].map(lambda x: x[:,0].mean())
+        box_df['ymean']=box_df['boxes'].map(lambda x: x[:,1].mean())
+        box_df=box_df.drop(columns=['boxes'])
+
     if contours and include_labels:
         contour_df=contour_df[contour_df['lbl'].isin(include_labels)]
 
     return dict(contour=contour_df,
-                dot=dot_annotations)
+                dot=dot_annotations,
+                boxes=box_df)
