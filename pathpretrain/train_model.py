@@ -269,8 +269,8 @@ def train_model(inputs_dir='inputs_training',
                 else:
                     raise NotImplementedError
                 dataset=NPYDataset(patch_info,extract_embeddings,transformers["test"],tensor_dataset)
-            dataset.embed(trainer.model,batch_size,embedding_out_dir)
-            return "Output Embeddings"
+            return dataset.embed(trainer.model,batch_size,embedding_out_dir)
+            # return "Output Embeddings"
         else:
             Y = dict()
 
