@@ -72,8 +72,13 @@ class PickleDataset(Dataset):
         return self.length
 
 class NPYRotatingStack(Dataset):
-    def __init__(self, patch_dir, transform, sample_frac=1., sample_every=0, target_col={'old_y_true':'y_true'}):
-        self.patch_npy=np.array(glob.glob(os.path.join(patch_dir,"*.npy")))
+    def __init__(self, patch_dir, transform, sample_frac=1., sample_every=0, target_col={'old_y_true':'y_true'},npy_rotate_sets_pkl="",Set=""):
+        self.npy_rotate_sets_pkl=npy_rotate_sets_pkl
+        if npy_rotate_sets_pkl:
+            self.patch_npy=pd.read_pickle(self.npy_rotate_sets_pkl)
+            self.patch_npy=self.patch_npy[self.patch_npy['Set']==Set]['npy'].values
+        else:
+            self.patch_npy=np.array(glob.glob(os.path.join(patch_dir,"*.npy")))
         self.patch_pkl=np.vectorize(lambda x: x.replace(".npy",".pkl"))(self.patch_npy)
         self.sample_every=sample_every
         self.sample_frac=sample_frac

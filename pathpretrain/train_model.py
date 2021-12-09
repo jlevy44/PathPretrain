@@ -162,7 +162,8 @@ def train_model(inputs_dir='inputs_training',
                 use_npy_rotate=False,
                 sample_frac=1.,
                 sample_every=0,
-                num_workers=0
+                num_workers=0,
+                npy_rotate_sets_pkl=""
                 ):
     assert save_metric in ['loss','f1']
     if use_npy_rotate: tensor_dataset,pickle_dataset=False,False
@@ -190,7 +191,7 @@ def train_model(inputs_dir='inputs_training',
         elif pickle_dataset:
             datasets = {x: PickleDataset(os.path.join(inputs_dir,f"{x}_data.pkl"),transformers[x],label_map) for x in (['train','val']+(['test'] if include_test_set else [])) if os.path.exists(os.path.join(inputs_dir,f"{x}_data.pkl"))}
         elif use_npy_rotate:
-            datasets = {x: NPYRotatingStack(os.path.join(inputs_dir,x),transformers[x],(sample_frac if x=='train' else 1.),sample_every,label_map) for x in (['train','val']+(['test'] if include_test_set else [])) if os.path.exists(os.path.join(inputs_dir,x))}
+            datasets = {x: NPYRotatingStack(os.path.join(inputs_dir,x),transformers[x],(sample_frac if x=='train' else 1.),sample_every,label_map,npy_rotate_sets_pkl,x) for x in (['train','val']+(['test'] if include_test_set else [])) if os.path.exists(os.path.join(inputs_dir,x))}
         else:
             datasets = {x: Datasets.ImageFolder(os.path.join(
                 inputs_dir, x), transformers[x]) for x in (['train','val']+(['test'] if include_test_set else []))}
