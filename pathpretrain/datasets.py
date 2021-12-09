@@ -77,9 +77,10 @@ class NPYRotatingStack(Dataset):
         if npy_rotate_sets_pkl:
             self.patch_npy=pd.read_pickle(self.npy_rotate_sets_pkl)
             self.patch_npy=self.patch_npy[self.patch_npy['Set']==Set]['npy'].values
+            self.patch_pkl=self.patch_npy[self.patch_npy['Set']==Set]['pkl'].values
         else:
             self.patch_npy=np.array(glob.glob(os.path.join(patch_dir,"*.npy")))
-        self.patch_pkl=np.vectorize(lambda x: x.replace(".npy",".pkl"))(self.patch_npy)
+            self.patch_pkl=np.vectorize(lambda x: x.replace(".npy",".pkl"))(self.patch_npy)
         self.sample_every=sample_every
         self.sample_frac=sample_frac
         if self.sample_frac==1: self.sample_every=0
