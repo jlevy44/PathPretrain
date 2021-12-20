@@ -10,7 +10,7 @@ import tifffile
 
 # Section taken from: https://github.com/jlevy44/PathFlowAI/blob/master/pathflowai/utils.py
 
-from skimage.morphology import watershed
+# from skimage.morphology import watershed
 from skimage.feature import peak_local_max
 from scipy.ndimage import label as scilabel, distance_transform_edt
 import scipy.ndimage as ndimage
