@@ -109,12 +109,11 @@ class NPYRotatingStack(Dataset):
             self.data.clear()
             self.data=new_data
             self.cache_npy=sorted(list(self.data.keys()))
-            self.ref_index=np.vstack([np.array(([i]*self.data[npy]['patch_info'].shape[0],list(range(self.data[npy]['patch_info'].shape[0])))).T] for i,npy in enumerate(self.cache_npy))
         else:
             self.data={npy:dict(patches=load_image(npy),
                                patch_info=pd.read_pickle(pkl)) for npy,pkl in zip(self.patch_npy,self.patch_pkl)}
             self.cache_npy=sorted(patch_npy)
-            self.ref_index=np.vstack([np.array(([i]*self.data[npy]['patch_info'].shape[0],list(range(self.data[npy]['patch_info'].shape[0])))).T] for i,npy in enumerate(self.cache_npy))
+        self.ref_index=np.vstack([np.array(([i]*self.data[npy]['patch_info'].shape[0],list(range(self.data[npy]['patch_info'].shape[0])))).T for i,npy in enumerate(self.cache_npy)])
         for npy in self.data: self.data[npy]['patch_info'][self.target_col[1]]=self.data[npy]['patch_info'][self.target_col[0]]
         self.length=self.ref_index.shape[0]
 
