@@ -70,8 +70,9 @@ class PickleDataset(Dataset):
 
     def __len__(self):
         return self.length
-
+import pysnooper
 class NPYRotatingStack(Dataset):
+    @pysnooper.snoop()
     def __init__(self, patch_dir, transform, sample_frac=1., sample_every=0, target_col={'old_y_true':'y_true'},npy_rotate_sets_pkl="",Set=""):
         self.npy_rotate_sets_pkl=npy_rotate_sets_pkl
         if npy_rotate_sets_pkl:
