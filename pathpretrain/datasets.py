@@ -105,7 +105,7 @@ class NPYRotatingStack(Dataset):
                 if isinstance(self.cache_npy,type(None))==False and npy not in self.cache_npy:
                     del self.data[npy]
             new_data={npy:(dict(patches=load_image(npy),
-                               patch_info=pd.read_pickle(pkl)) if (isinstance(self.cache_npy,type(None))==False and npy in self.cache_npy) else self.data[k]) for npy,pkl in zip(patch_npy,patch_pkl)}
+                               patch_info=pd.read_pickle(pkl)) if (isinstance(self.cache_npy,type(None))==False and npy in self.cache_npy) else self.data[npy]) for npy,pkl in zip(patch_npy,patch_pkl)}
             self.data.clear()
             self.data=new_data
             self.cache_npy=sorted(list(self.data.keys()))
