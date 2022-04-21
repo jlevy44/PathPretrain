@@ -70,7 +70,7 @@ class PickleDataset(Dataset):
 
     def __len__(self):
         return self.length
-        
+
 class NPYRotatingStack(Dataset):
     def __init__(self, patch_dir, transform, sample_frac=1., sample_every=0, target_col={'old_y_true':'y_true'},npy_rotate_sets_pkl="",Set=""):
         self.npy_rotate_sets_pkl=npy_rotate_sets_pkl
@@ -97,7 +97,7 @@ class NPYRotatingStack(Dataset):
     def load_image_annot(self):
         if self.sample_frac<1:
             idx=np.arange(len(self.patch_npy))
-            idx=np.random.choice(idx,int(self.sample_frac*len(index)))
+            idx=np.random.choice(idx,int(self.sample_frac*len(idx)))
             patch_npy=self.patch_npy[idx]
             patch_pkl=self.patch_pkl[idx]
             remove_npy=np.setdiff1d(self.patch_npy,patch_npy)
