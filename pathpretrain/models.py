@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 from sklearn.utils.class_weight import compute_class_weight
 from kornia.losses import DiceLoss
 import tqdm
+import pysnooper
 
 matplotlib.use('Agg')
 sns.set()
@@ -355,7 +356,7 @@ class ModelTrainer:
         else:
             loss.backward()
 
-    # @pysnooper.snoop('train_loop.log')
+    # @pysnooper.snoop()
     def train_loop(self, epoch, train_dataloader):
         """One training epoch, calculate predictions, loss, backpropagate.
 
@@ -400,7 +401,7 @@ class ModelTrainer:
             y_pred = self.model(X) if Z is None else self.model(X,Z)
             # y_true=y_true.argmax(dim=1)
 
-            loss = self.calc_loss(y_pred, y_true)  # .view(-1,1)
+            loss = self.calc_loss(y_pred, y_true if self.semantic_segmentation else y_true.flatten())  # .view(-1,1)
             train_loss = loss.item()
             running_loss += train_loss
             self.optimizer.zero_grad()
