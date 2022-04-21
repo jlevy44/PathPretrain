@@ -120,7 +120,7 @@ class NPYRotatingStack(Dataset):
         i,j=self.ref_index[idx]
         npy=self.cache_npy[i]
         X=self.data[npy]['patches'][j]
-        y=torch.LongTensor(np.array(self.data[npy]['patch_info'].iloc[j][self.target_col[1]]))
+        y=torch.LongTensor(np.array(self.data[npy]['patch_info'].iloc[j][self.target_col[1]]).reshape(1))
         X=self.transform(self.to_pil(X))
         return X, y
 
