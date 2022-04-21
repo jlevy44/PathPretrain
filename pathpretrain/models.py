@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 from sklearn.utils.class_weight import compute_class_weight
 from kornia.losses import DiceLoss
 import tqdm
-import pysnooper
+# import pysnooper
 
 matplotlib.use('Agg')
 sns.set()
@@ -474,13 +474,13 @@ class ModelTrainer:
                     y_pred_numpy = y_pred_numpy.argmax(axis=1)
                 Y['pred'].append(y_pred_numpy.flatten())
 
-                loss = self.calc_val_loss(y_pred, y_true)  # .view(-1,1)
+                loss = self.calc_val_loss(y_pred, y_true if self.semantic_segmentation else y_true.flatten())  # .view(-1,1)
                 val_loss = loss.item()
                 running_loss += val_loss
                 if self.verbosity >=1:
                     print("Epoch {}[{}/{}] Val Loss:{}".format(epoch, i, n_batch, val_loss))
         # if print_val_confusion and save_predictions:
-        y_pred, y_true = np.hstack(Y['pred']), np.hstack(Y['true'])
+        y_pred, y_true = np.hstack(Y['pred']).flatten(), np.hstack(Y['true']).flatten()
         print(classification_report(y_true, y_pred))
         running_loss /= n_batch
         return running_loss, f1_score(y_true, y_pred,average='macro')
