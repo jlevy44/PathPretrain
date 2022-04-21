@@ -14,7 +14,7 @@ from PIL import Image
 import torch.nn as nn
 import kornia.augmentation as K, kornia.geometry.transform as G
 from .datasets import NPYDataset, PickleDataset, NPYRotatingStack
-# import pysnooper
+import pysnooper
 
 class Reshape(nn.Module):
     def __init__(self):
@@ -126,7 +126,7 @@ def generate_kornia_segmentation_transforms(image_size=224, resize=256, mean=[],
             transforms[k]=transforms[k].cuda()
     return transforms
 
-# @pysnooper.snoop()
+@pysnooper.snoop()
 def train_model(inputs_dir='inputs_training',
                 learning_rate=1e-4,
                 n_epochs=300,
@@ -191,7 +191,7 @@ def train_model(inputs_dir='inputs_training',
         elif pickle_dataset:
             datasets = {x: PickleDataset(os.path.join(inputs_dir,f"{x}_data.pkl"),transformers[x],label_map) for x in (['train','val']+(['test'] if include_test_set else [])) if os.path.exists(os.path.join(inputs_dir,f"{x}_data.pkl"))}
         elif use_npy_rotate:
-            datasets = {x: NPYRotatingStack(os.path.join(inputs_dir,x),transformers[x],(sample_frac if x=='train' else 1.),sample_every,label_map,npy_rotate_sets_pkl,x) for x in (['train','val']+(['test'] if include_test_set else [])) if os.path.exists(os.path.join(inputs_dir,x))}    
+            datasets = {x: NPYRotatingStack(os.path.join(inputs_dir,x),transformers[x],(sample_frac if x=='train' else 1.),sample_every,label_map,npy_rotate_sets_pkl,x) for x in (['train','val']+(['test'] if include_test_set else [])) if os.path.exists(os.path.join(inputs_dir,x))}
         else:
             datasets = {x: Datasets.ImageFolder(os.path.join(
                 inputs_dir, x), transformers[x]) for x in (['train','val']+(['test'] if include_test_set else []))}
