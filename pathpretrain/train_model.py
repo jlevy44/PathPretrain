@@ -191,11 +191,11 @@ def train_model(inputs_dir='inputs_training',
         elif pickle_dataset:
             datasets = {x: PickleDataset(os.path.join(inputs_dir,f"{x}_data.pkl"),transformers[x],label_map) for x in (['train','val']+(['test'] if include_test_set else [])) if os.path.exists(os.path.join(inputs_dir,f"{x}_data.pkl"))}
         elif use_npy_rotate:
-            datasets = {x: NPYRotatingStack(os.path.join(inputs_dir,x),transformers[x],(sample_frac if x=='train' else 1.),sample_every,label_map,npy_rotate_sets_pkl,x) for x in (['train','val']+(['test'] if include_test_set else [])) if os.path.exists(os.path.join(inputs_dir,x))}
+            datasets = {x: NPYRotatingStack(os.path.join(inputs_dir,x),transformers[x],(sample_frac if x=='train' else 1.),sample_every,label_map,npy_rotate_sets_pkl,x) for x in (['train','val']+(['test'] if include_test_set else [])) if os.path.exists(os.path.join(inputs_dir,x))}    
         else:
             datasets = {x: Datasets.ImageFolder(os.path.join(
                 inputs_dir, x), transformers[x]) for x in (['train','val']+(['test'] if include_test_set else []))}
-
+    print(datasets)
     dataloaders = {x: DataLoader(
         datasets[x], batch_size=batch_size, num_workers=num_workers, shuffle=(x == 'train' and not predict), worker_init_fn=worker_init_fn) for x in datasets}
 

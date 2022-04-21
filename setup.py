@@ -2,7 +2,8 @@ from setuptools import setup
 from setuptools.command.install import install
 import subprocess
 import os
-PACKAGES=["tifffile==2021.11.2"
+PACKAGES=["tifffile==2021.11.2",
+          "scikit-image==0.18.3"
             ]
 
 with open('README.md','r', encoding='utf-8') as f:
