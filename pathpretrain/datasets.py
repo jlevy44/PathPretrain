@@ -95,7 +95,7 @@ class NPYRotatingStack(Dataset):
         self.load_image_annot()
 
     def load_image_annot(self):
-        if self.sample_frac<1:
+        if self.sample_frac<1.:
             idx=np.arange(len(self.patch_npy))
             idx=np.random.choice(idx,int(self.sample_frac*len(idx)))
             patch_npy=self.patch_npy[idx]
@@ -105,7 +105,7 @@ class NPYRotatingStack(Dataset):
                 if isinstance(self.cache_npy,type(None))==False and npy not in self.cache_npy:
                     del self.data[npy]
             new_data={npy:(dict(patches=load_image(npy),
-                               patch_info=pd.read_pickle(pkl)) if (isinstance(self.cache_npy,type(None))==False and npy in self.cache_npy) else self.data[npy]) for npy,pkl in zip(patch_npy,patch_pkl)}
+                               patch_info=pd.read_pickle(pkl)) if (self.cache_npy is None and npy not in self.cache_npy) else self.data[npy]) for npy,pkl in zip(patch_npy,patch_pkl)}
             self.data.clear()
             self.data=new_data
             self.cache_npy=sorted(list(self.data.keys()))
