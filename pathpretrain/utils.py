@@ -122,9 +122,9 @@ def deduplicate_images(image_list):
 
 def load_image(image_file, check_size=False, mmap_mode=None):
     img_ext=os.path.splitext(image_file)
-    if img_ext[-1]==".npy":
+    if img_ext[-1].lower() ==".npy":
         image=np.load(image_file, mmap_mode=mmap_mode)
-    elif img_ext[-1] in [".svs",".tif",".tiff",".png"]:
+    elif img_ext[-1].lower() in [".svs",".tif",".tiff",".png"]:
         if check_size:
             import openslide
             slide=openslide.open_slide(image_file)
