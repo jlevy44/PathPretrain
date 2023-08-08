@@ -33,7 +33,7 @@ def filter_grays(rgb, tolerance=15, output_type="bool"):
     NumPy array representing a mask where pixels with similar red, green, and blue values have been masked out.
     """
     (h, w, c) = rgb.shape
-    rgb = rgb.astype(np.int)
+    rgb = rgb.astype(int)
     rg_diff = np.abs(rgb[:, :, 0] - rgb[:, :, 1]) <= tolerance
     rb_diff = np.abs(rgb[:, :, 0] - rgb[:, :, 2]) <= tolerance
     gb_diff = np.abs(rgb[:, :, 1] - rgb[:, :, 2]) <= tolerance
