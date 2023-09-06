@@ -1,0 +1,5 @@
+[console_scripts]
+pathpretrain-embed = pathpretrain.embed:main
+pathpretrain-predict = pathpretrain.predict:main
+pathpretrain-preprocess = pathpretrain.preprocess:main
+pathpretrain-train = pathpretrain.train_model:main

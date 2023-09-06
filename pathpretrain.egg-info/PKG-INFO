@@ -1,0 +1,17 @@
+Metadata-Version: 2.1
+Name: pathpretrain
+Version: 0.1.1
+Summary: Simple setup train image models.
+Home-page: https://github.com/jlevy44/PathPretrain
+Author: Joshua Levy
+Author-email: joshualevy44@berkeley.edu
+License: MIT
+Description-Content-Type: text/markdown
+License-File: LICENSE
+
+# PathPretrain
+ 
+## Installation
+Run the ```install.sh```       
+Alternatively, you can use the ```spec-list.txt``` to install the conda libraries and run everything but the first line of the ```install.sh```
+Then run ```pip install git+https://github.com/jlevy44/PathPretrain```

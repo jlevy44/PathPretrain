@@ -2,15 +2,14 @@ from setuptools import setup
 from setuptools.command.install import install
 import subprocess
 import os
-PACKAGES=["tifffile==2021.11.2",
-          "scikit-image==0.18.3"
-            ]
+with open("requirements.txt") as f:
+      PACKAGES=f.read().splitlines()
 
 with open('README.md','r', encoding='utf-8') as f:
       long_description = f.read()
 
 setup(name='pathpretrain',
-      version='0.1',
+      version='0.1.1',
       description='Simple setup train image models.',
       url='https://github.com/jlevy44/PathPretrain',
       author='Joshua Levy',
