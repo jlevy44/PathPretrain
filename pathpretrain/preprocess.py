@@ -1,13 +1,11 @@
 import fire
 import cv2, os, tqdm, dask
 import pandas as pd, numpy as np
-import histomicstk as htk
 from dask.diagnostics import ProgressBar
 from .utils import generate_tissue_mask
 from .utils import load_image
 from itertools import product
-from histomicstk.preprocessing.color_normalization.deconvolution_based_normalization import deconvolution_based_normalization
-
+    
 
 DEFAULT_MASK_PARAMETERS=dict(compression=10,
                             otsu=False,
@@ -24,6 +22,7 @@ DEFAULT_MASK_PARAMETERS=dict(compression=10,
 NORM_PATCH_SIZE=1024
 
 def return_norm_image(img,mask,W_source=None,W_target=None):
+    from histomicstk.preprocessing.color_normalization.deconvolution_based_normalization import deconvolution_based_normalization
     img=deconvolution_based_normalization(
         img, W_source=W_source, W_target=W_target, im_target=None,
         stains=['hematoxylin', 'eosin'], mask_out=~mask,
@@ -31,6 +30,7 @@ def return_norm_image(img,mask,W_source=None,W_target=None):
     return img
 
 def stain_norm(image, mask, compression, stain_target_parameters, patch_size=1024):
+    import histomicstk as htk
     img_small=cv2.resize(image,None,fx=1/compression,fy=1/compression)
     W_source = htk.preprocessing.color_deconvolution.rgb_separate_stains_macenko_pca(img_small, 215)
     W_source = htk.preprocessing.color_deconvolution._reorder_stains(W_source)

@@ -9,7 +9,7 @@ with open('README.md','r', encoding='utf-8') as f:
       long_description = f.read()
 
 setup(name='pathpretrain',
-      version='0.1.1',
+      version='0.1.2',
       description='Simple setup train image models.',
       url='https://github.com/jlevy44/PathPretrain',
       author='Joshua Levy',
@@ -26,4 +26,5 @@ setup(name='pathpretrain',
       long_description=long_description,
       long_description_content_type='text/markdown',
       packages=['pathpretrain'],
-      install_requires=PACKAGES)
+      install_requires=PACKAGES,
+      extras_requires=dict(stain_norm="histomicstk==1.2.10".split()))
