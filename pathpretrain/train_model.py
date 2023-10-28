@@ -96,8 +96,8 @@ class SegmentationTransform(nn.Module):
         # self.rotations_mask=nn.ModuleList([
         #        K.augmentation.RandomAffine([-90., 90.], [0., 0.15], [0.5, 1.5], [0., 0.15],resample="NEAREST")
         #        ])
-        self.affine=K.augmentation.RandomAffine([-90., 90.], [0., 0.15], None, [0., 0.15])
-        self.affine_mask=K.augmentation.RandomAffine([-90., 90.], [0., 0.15], None, [0., 0.15],resample="NEAREST",align_corners=False)
+        self.affine=K.RandomAffine([-90., 90.], [0., 0.15], None, [0., 0.15])
+        self.affine_mask=K.RandomAffine([-90., 90.], [0., 0.15], None, [0., 0.15],resample="NEAREST",align_corners=False)
         self.normalize=K.Normalize(mean,std)
         self.crop,self.mask_crop=K.CenterCrop((image_size,image_size)),K.CenterCrop((image_size,image_size),resample="NEAREST")
         self.Set=Set
@@ -117,13 +117,32 @@ class SegmentationTransform(nn.Module):
             mask_out=self.mask_crop(self.mask_resize(mask))
         return img,mask_out.squeeze(1).long()#[:,0,...]
 
-def generate_kornia_segmentation_transforms(image_size=224, resize=256, mean=[], std=[], include_jitter=False):  # add this then IoU metric
-    mean=torch.tensor(mean) if mean else torch.tensor([0.5, 0.5, 0.5])
-    std=torch.tensor(std) if std else torch.tensor([0.1, 0.1, 0.1])
-    transforms={k:SegmentationTransform(resize,image_size,mean,std,include_jitter=False,Set=k) for k in ['train','val']}
+def generate_kornia_segmentation_transforms(image_size=224, resize=256, mean=[], std=[], include_jitter=False):
+    """
+    Generates Kornia segmentation transforms for training and validation sets.
+
+    Args:
+        image_size (int): The size of the output image.
+        resize (int): The size to which the input image is resized.
+        mean (list): The mean values for normalization.
+        std (list): The standard deviation values for normalization.
+        include_jitter (bool): Whether to include jitter augmentation.
+
+    Returns:
+        dict: A dictionary containing the segmentation transforms for the 'train' and 'val' sets.
+    """
+    # Set default mean and std values if not provided
+    mean = torch.tensor(mean) if mean else torch.tensor([0.5, 0.5, 0.5])
+    std = torch.tensor(std) if std else torch.tensor([0.1, 0.1, 0.1])
+
+    # Create a dictionary of SegmentationTransform objects for 'train' and 'val' sets
+    transforms = {k: SegmentationTransform(resize, image_size, mean, std, include_jitter=False, Set=k) for k in ['train', 'val']}
+
+    # Move transforms to GPU if available
     if torch.cuda.is_available():
         for k in transforms:
-            transforms[k]=transforms[k].cuda()
+            transforms[k] = transforms[k].cuda()
+
     return transforms
 
 # @pysnooper.snoop()
@@ -165,6 +184,52 @@ def train_model(inputs_dir='inputs_training',
                 num_workers=0,
                 npy_rotate_sets_pkl=""
                 ):
+    """
+    Trains a deep learning model for image classification or semantic segmentation.
+
+    Args:
+        inputs_dir (str): The directory containing the input data.
+        learning_rate (float): The learning rate for the optimizer.
+        n_epochs (int): The number of epochs to train the model.
+        crop_size (int): The size of the cropped image.
+        resize (int): The size to which the input image is resized.
+        mean (list): The mean values for normalization.
+        std (list): The standard deviation values for normalization.
+        num_classes (int): The number of classes in the dataset.
+        architecture (str): The name of the architecture to use for the model.
+        batch_size (int): The batch size for training and validation sets.
+        predict (bool): Whether to predict on the test set.
+        model_save_loc (str): The file path to save the trained model.
+        pretrained_save_loc (str): The file path to save the pretrained model.
+        predictions_save_path (str): The file path to save the predictions.
+        predict_set (str): The name of the set to predict on.
+        verbose (bool): Whether to print verbose output.
+        class_balance (bool): Whether to use class balancing.
+        extract_embeddings (str): The file path to extract embeddings.
+        extract_embeddings_df (str): The file path to extract embeddings from a dataframe.
+        embedding_out_dir (str): The directory to save the embeddings.
+        gpu_id (int): The ID of the GPU to use.
+        checkpoints_dir (str): The directory to save checkpoints.
+        tensor_dataset (bool): Whether to use a tensor dataset.
+        pickle_dataset (bool): Whether to use a pickle dataset.
+        label_map (dict): A dictionary mapping labels to integers.
+        semantic_segmentation (bool): Whether to perform semantic segmentation.
+        save_metric (str): The metric to use for saving the model.
+        custom_dataset (object): A custom dataset object.
+        save_predictions (bool): Whether to save the predictions.
+        pretrained (bool): Whether to use a pretrained model.
+        save_after_n_batch (int): The number of batches after which to save the model.
+        include_test_set (bool): Whether to include the test set.
+        use_npy_rotate (bool): Whether to use npy rotate.
+        sample_frac (float): The fraction of the dataset to sample.
+        sample_every (int): The number of epochs before resampling.
+        num_workers (int): The number of workers for data loading.
+        npy_rotate_sets_pkl (str): The file path to npy rotate sets.
+
+    Returns:
+        object: The trained model or the predictions.
+    """
+    # Function code here
     assert save_metric in ['loss','f1']
     if use_npy_rotate: tensor_dataset,pickle_dataset=False,False
     else: sample_every=0
