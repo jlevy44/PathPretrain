@@ -9,7 +9,7 @@ with open('README.md','r', encoding='utf-8') as f:
       long_description = f.read()
 
 setup(name='pathpretrain',
-      version='0.1.2',
+      version='0.1.3',
       description='Simple setup train image models.',
       url='https://github.com/jlevy44/PathPretrain',
       author='Joshua Levy',
