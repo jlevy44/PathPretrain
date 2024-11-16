@@ -18,5 +18,5 @@ torchvision==0.15.2
 tqdm==4.64.1
 xmltodict==0.13.0
 zarr==2.16.1
-tifffile==2021.11.2
+tifffile>=2021.11.2
 imagecodecs>=2023.9.4
