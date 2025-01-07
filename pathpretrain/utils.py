@@ -100,6 +100,12 @@ def generate_tissue_mask(arr,
 
 ######################################
 
+IMAGE_EXTENSIONS=[".svs", ".tif", ".tiff", ".png", ".jpeg", 
+    ".dng", ".zif", ".stk", ".lsm", ".ome.tif", ".ome.tiff", 
+    ".sgi", ".rgb", ".rgba", ".bw", ".img", ".oib", ".oif", 
+    ".sis", ".esf", ".gel", ".scn", ".bif", 
+    ".qptiff", ".qpi", ".pki", ".ndpi", ".avs"]
+
 
 def deduplicate_images(image_list):
     image_list=pd.Series(image_list) # if X is a pandas series containing images for individual elements
@@ -124,7 +130,7 @@ def load_image(image_file, check_size=False, mmap_mode=None):
     img_ext=os.path.splitext(image_file)
     if img_ext[-1].lower() ==".npy":
         image=np.load(image_file, mmap_mode=mmap_mode)
-    elif img_ext[-1].lower() in [".svs",".tif",".tiff",".png"]:
+    elif img_ext[-1].lower() in IMAGE_EXTENSIONS:
         if check_size:
             import openslide
             slide=openslide.open_slide(image_file)
