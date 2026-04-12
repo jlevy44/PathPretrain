@@ -66,9 +66,9 @@ def label_objects(img,
     if not gray_before_close: BW=BW&gray_mask
     if blur_size: BW=(cv2.blur(BW.astype(np.uint8), (blur_size,blur_size))==1)
     labels = scilabel(BW)[0]
-    labels=morph.remove_small_objects(labels, min_size=min_object_size, connectivity = connectivity, in_place=True)
+    labels=morph.remove_small_objects(labels, min_size=min_object_size, connectivity = connectivity)
     if not keep_holes and max_hole_size:
-        BW=morph.remove_small_objects(labels==0, min_size=max_hole_size, connectivity = connectivity, in_place=True)==False#remove_small_holes(labels,area_threshold=max_hole_size, connectivity = connectivity, in_place=True)>0
+        BW=morph.remove_small_objects(labels==0, min_size=max_hole_size, connectivity = connectivity)==False#remove_small_holes(labels,area_threshold=max_hole_size, connectivity = connectivity, in_place=True)>0
     elif keep_holes:
         BW=labels>0
     else:
