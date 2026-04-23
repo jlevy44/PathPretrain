@@ -54,7 +54,8 @@ def preprocess(image_file="",
                compression=8,
                patch_size=256,
                patch_dir="patches",
-               downsample_tcga_40x=False
+               downsample_tcga_40x=False,
+               skip_npy_patches=False
                ):
 
     mask_parameters=DEFAULT_MASK_PARAMETERS
@@ -78,7 +79,7 @@ def preprocess(image_file="",
     os.makedirs(patch_dir,exist_ok=True)
     if save_tissue_mask:
         np.save(f"masks/{basename}.npy",mask)
-    np.save(f"{patch_dir}/{basename}.npy",patches[include_patches])
+    if not skip_npy_patches: np.save(f"{patch_dir}/{basename}.npy",patches[include_patches])
     patch_info.iloc[include_patches].to_pickle(f"{patch_dir}/{basename}.pkl")
 
 def main():
